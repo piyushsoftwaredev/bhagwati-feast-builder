@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, UserSession, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, UserSession } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 type AuthContextType = {
@@ -19,26 +19,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
+  const [isSupabaseReady, setIsSupabaseReady] = useState(true); // Now always true since we have hardcoded credentials
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Supabase is configured
-    const supabaseConfigured = isSupabaseConfigured();
-    setIsSupabaseReady(supabaseConfigured);
-    
-    if (!supabaseConfigured) {
-      console.warn("Supabase is not properly configured. Some features may not work.");
-      toast({
-        title: "Supabase Connection Issue",
-        description: "Backend services are not available. Please contact support.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      setIsLoading(false);
-      return;
-    }
-
     const fetchSession = async () => {
       try {
         // Get current user
@@ -108,13 +92,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [toast]);
 
   const signIn = async (email: string, password: string) => {
-    if (!isSupabaseReady) {
-      return { 
-        error: new Error("Backend services are not available"), 
-        success: false 
-      };
-    }
-
     try {
       setIsLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
@@ -134,8 +111,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    if (!isSupabaseReady) return;
-
     try {
       setIsLoading(true);
       await supabase.auth.signOut();

@@ -1,9 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Use default values for local development if environment variables are not set
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Use the provided Supabase URL and anon key
+const supabaseUrl = 'https://ojxgfumctgvueozmwayc.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qeGdmdW1jdGd2dWVvem13YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNTk0ODYsImV4cCI6MjA2MTkzNTQ4Nn0.cFH4t59RKa7WXa1TQ9YyNGkkMFiFy3sGlnhvPV52jjk';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -16,8 +16,8 @@ export type UserSession = {
   isAdmin: boolean;
 };
 
-// Add helper function to check if Supabase connection is working
+// Helper function to check if Supabase connection is working
 export const isSupabaseConfigured = () => {
-  return supabaseUrl !== 'https://your-project.supabase.co' && 
-         supabaseAnonKey !== 'your-anon-key';
+  // Now we always return true since we have hardcoded the credentials
+  return true;
 };
