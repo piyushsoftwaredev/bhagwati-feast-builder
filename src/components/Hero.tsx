@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -25,12 +26,16 @@ const Hero = () => {
             Creating unforgettable culinary experiences with authentic flavors, elegant presentations, and impeccable service.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            <Button className="bg-bhagwati-maroon hover:bg-bhagwati-maroon/90 text-white px-8 py-6">
-              Our Services
-            </Button>
-            <Button variant="outline" className="border-bhagwati-gold text-bhagwati-gold hover:bg-bhagwati-gold/5 px-8 py-6">
-              Contact Us
-            </Button>
+            <Link to="/services">
+              <Button className="bg-bhagwati-maroon hover:bg-bhagwati-maroon/90 text-white px-8 py-6 w-full sm:w-auto">
+                Our Services
+              </Button>
+            </Link>
+            <Link to="/booking">
+              <Button variant="outline" className="border-bhagwati-gold text-bhagwati-gold hover:bg-bhagwati-gold/5 px-8 py-6 w-full sm:w-auto">
+                Book Now
+              </Button>
+            </Link>
           </div>
         </div>
         <div className="md:w-1/2 flex justify-center md:justify-end relative">
