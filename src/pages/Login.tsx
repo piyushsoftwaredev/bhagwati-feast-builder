@@ -182,7 +182,7 @@ const Login = () => {
         </Card>
         
         <div className="text-center mt-4 text-sm text-gray-600">
-          <p>For demo access, use the credentials above.</p>
+          <p>For demo access, use the demo@example.com / demo123 credentials.</p>
         </div>
       </div>
     </div>

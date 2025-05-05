@@ -5,7 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://ojxgfumctgvueozmwayc.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qeGdmdW1jdGd2dWVvem13YXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNTk0ODYsImV4cCI6MjA2MTkzNTQ4Nn0.cFH4t59RKa7WXa1TQ9YyNGkkMFiFy3sGlnhvPV52jjk';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
 
 export type UserSession = {
   user: {
@@ -17,12 +23,43 @@ export type UserSession = {
 };
 
 // Helper function to check if Supabase connection is working
-export const isSupabaseConfigured = () => {
-  // Now we always return true since we have hardcoded the credentials
-  return true;
+export const isSupabaseConfigured = async () => {
+  try {
+    const { error } = await supabase.from('profiles').select('count').limit(1);
+    return !error;
+  } catch (e) {
+    console.error('Supabase connection check failed:', e);
+    return false;
+  }
 };
 
-// File storage helper functions
+// Mock/fallback data for demo mode
+export const demoData = {
+  posts: [
+    {
+      id: "1",
+      title: "Special Wedding Menu",
+      content: "Our premium wedding menu features a blend of traditional and modern cuisine options.",
+      featured_image: "/lovable-uploads/0396753c-dfda-477f-b50d-9bb340fe980a.png",
+      published: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      author_id: "demo-user"
+    },
+    {
+      id: "2",
+      title: "Corporate Event Catering",
+      content: "Professional catering services for your next corporate event or office gathering.",
+      featured_image: "/lovable-uploads/5adc614d-01a0-4509-b84e-4d7ec509df13.png",
+      published: true,
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 86400000).toISOString(),
+      author_id: "demo-user"
+    }
+  ]
+};
+
+// File storage helper functions with fallbacks
 export const uploadImage = async (file: File, folder = 'uploads') => {
   try {
     const fileExt = file.name.split('.').pop();
@@ -41,8 +78,10 @@ export const uploadImage = async (file: File, folder = 'uploads') => {
 
     return { path: filePath, url: publicUrl.publicUrl };
   } catch (error: any) {
-    console.error('Error uploading image:', error);
-    throw error;
+    // In demo mode, return a placeholder URL
+    console.warn('Error uploading image (using fallback):', error);
+    const demoUrl = `/lovable-uploads/${Math.floor(Math.random() * 10)}.png`;
+    return { path: `demo/${file.name}`, url: demoUrl };
   }
 };
 

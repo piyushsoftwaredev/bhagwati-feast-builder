@@ -1,8 +1,19 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, UserSession } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
+
+type UserData = {
+  id: string;
+  email: string;
+  role?: string;
+};
+
+type UserSession = {
+  user: UserData | null;
+  isAdmin: boolean;
+};
 
 type AuthContextType = {
   session: UserSession | null;
@@ -23,109 +34,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isSupabaseReady, setIsSupabaseReady] = useState(true);
   const { toast } = useToast();
 
-  // Use a more robust session check function
-  const fetchUserSession = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error('Error fetching user:', userError);
-        setSession(null);
-        setIsLoading(false);
-        return;
-      }
-      
-      if (!user) {
-        console.log('No user found in session');
-        setSession(null);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('User found:', user.id);
-      
-      // Get user profile and role
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        const isAdmin = profile?.role === 'admin';
-        
-        setSession({
-          user: {
-            id: user.id,
-            email: user.email || '',
-            role: profile?.role || 'user',
-          },
-          isAdmin: isAdmin || true, // Default to admin for testing if no role found
-        });
-      } catch (profileError) {
-        console.log('Profile not found, setting default admin role');
-        // No profile found, but we still have a user, so create a session
-        setSession({
-          user: {
-            id: user.id,
-            email: user.email || '',
-            role: 'admin', // Default role
-          },
-          isAdmin: true,
-        });
-      }
-    } catch (error) {
-      console.error('Error in fetchUserSession:', error);
-      setSession(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initialize session
+  // Initialize auth state with optimized session handling
   useEffect(() => {
-    fetchUserSession();
-    
-    // Set up auth state change listener
+    // Set up auth state change listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
+      (event, currentSession) => {
+        console.log('Auth state change:', event, currentSession?.user?.id);
         
-        if (session?.user) {
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            
-            const isAdmin = profile?.role === 'admin' || true; // Default to admin for testing
+        if (currentSession?.user) {
+          // Use setTimeout to avoid potential deadlocks with Supabase auth
+          setTimeout(() => {
+            const userData = {
+              id: currentSession.user.id,
+              email: currentSession.user.email || '',
+              role: 'admin', // Default to admin for demo
+            };
             
             setSession({
-              user: {
-                id: session.user.id,
-                email: session.user.email || '',
-                role: profile?.role || 'user',
-              },
-              isAdmin,
-            });
-          } catch (error) {
-            console.error('Error in auth state change handler:', error);
-            // Still set the session even if profile fetch fails
-            setSession({
-              user: {
-                id: session.user.id,
-                email: session.user.email || '',
-                role: 'admin', // Default role
-              },
+              user: userData,
               isAdmin: true,
             });
-          } finally {
             setIsLoading(false);
-          }
+          }, 0);
         } else {
           setSession(null);
           setIsLoading(false);
@@ -133,32 +63,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
+    // THEN check for existing session
+    const checkExistingSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session?.user) {
+          const userData = {
+            id: data.session.user.id,
+            email: data.session.user.email || '',
+            role: 'admin', // Default to admin for demo
+          };
+          
+          setSession({
+            user: userData,
+            isAdmin: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkExistingSession();
+
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       console.log('Signing in with:', email);
       
-      // For testing purposes or if Supabase is not available, use a demo login
+      // Always allow demo login for testing
       if (email === 'demo@example.com' && password === 'demo123') {
         console.log('Using demo login');
         
-        // Set a demo session manually
+        // Set a demo session manually with a 30-min timeout
+        const demoUser = {
+          id: 'demo-user-id',
+          email: 'demo@example.com',
+          role: 'admin',
+        };
+        
         setSession({
-          user: {
-            id: 'demo-user-id',
-            email: 'demo@example.com',
-            role: 'admin',
-          },
+          user: demoUser,
           isAdmin: true,
         });
         
+        // Store demo session in localStorage for persistence
+        localStorage.setItem('demoSession', JSON.stringify({
+          user: demoUser,
+          expires: Date.now() + (30 * 60 * 1000) // 30 minutes
+        }));
+        
         sonnerToast.success('Demo login successful');
-        setIsLoading(false);
         return { error: null, success: true };
       }
       
@@ -171,52 +134,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('Sign in error:', error);
         
-        // If using demo credentials but in wrong format, suggest correct format
+        // If using demo-like credentials but in wrong format, suggest correct format
         if (email.toLowerCase().includes('demo') && password.includes('demo')) {
           sonnerToast.error('Did you mean to use demo@example.com / demo123?');
         }
         
-        setIsLoading(false);
         return { error, success: false };
       }
       
       console.log('Sign in successful:', data);
-      
-      // Create or update profile
-      if (data.user) {
-        try {
-          // Try to get existing profile
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-          
-          if (profileError || !profile) {
-            // Profile doesn't exist, create it
-            const { error: createError } = await supabase
-              .from('profiles')
-              .insert({ 
-                id: data.user.id, 
-                role: 'admin', // Default to admin
-                email: data.user.email 
-              });
-              
-            if (createError) {
-              console.error('Error creating profile:', createError);
-            } else {
-              console.log('Created new admin profile');
-            }
-          } else {
-            console.log('Using existing profile');
-          }
-          
-          // Update session immediately
-          await fetchUserSession();
-        } catch (error) {
-          console.error('Error checking/creating profile:', error);
-        }
-      }
       
       return { error: null, success: true };
     } catch (error) {
@@ -231,6 +157,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       console.log('Signing out');
+      
+      // Clear demo session if exists
+      localStorage.removeItem('demoSession');
+      
       await supabase.auth.signOut();
       setSession(null);
       sonnerToast.success('Signed out successfully');

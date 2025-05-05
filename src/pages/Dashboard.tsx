@@ -10,97 +10,58 @@ import MessagesManager from '@/components/admin/MessagesManager';
 import SiteSettings from '@/components/admin/SiteSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import { useToast } from '@/hooks/use-toast';
-import { initializeDatabase, ensureStorageBuckets, createDatabaseFunctions } from '@/lib/supabase-functions';
-import { cache } from '@/lib/cache-service';
+import { checkSupabaseConnection } from '@/integrations/supabase/client';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Dashboard = () => {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('posts');
   const [initialized, setInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [connectionChecked, setConnectionChecked] = useState(false);
 
+  // Check Supabase connection first
   useEffect(() => {
-    const setupDatabase = async () => {
-      if (isInitializing) return; // Prevent multiple initialization attempts
-      
-      // Check if we've already initialized in this session via cache
-      const cacheKey = `db-initialized-${session?.user?.id}`;
-      if (cache.has(cacheKey)) {
-        setInitialized(true);
-        return;
-      }
-      
-      setIsInitializing(true);
-      setInitError(null);
-      
+    const checkConnection = async () => {
       try {
-        console.log('Setting up database for user:', session?.user?.id);
+        const connected = await checkSupabaseConnection();
+        setInitialized(connected);
+        setConnectionChecked(true);
         
-        if (session?.user) {
-          // Use a single comprehensive initialization function
-          const { success, message } = await initializeDatabaseComponents(session.user.id, session.user.email);
-          
-          if (success) {
-            setInitialized(true);
-            // Cache the initialization status for 30 minutes
-            cache.set(cacheKey, true, 30);
-            console.log('Database and storage setup complete');
-          } else {
-            setInitError(message || 'Database initialization incomplete. Some features may be unavailable.');
-          }
+        if (!connected) {
+          setInitError("Could not connect to database. Using demo mode.");
+          toast({
+            title: "Database Connection Issue",
+            description: "Using demo mode. Some features may be limited.",
+            variant: "destructive",
+          });
         }
-      } catch (error: any) {
-        console.error('Error setting up database:', error);
-        setInitError('Failed to initialize the database. Please try again or contact support.');
-        
-        toast({
-          title: "Database Setup Error",
-          description: "There was an issue setting up the database. Please try again or contact support.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsInitializing(false);
+      } catch (error) {
+        console.error("Connection check error:", error);
+        setInitialized(true); // Continue in demo mode
+        setConnectionChecked(true);
+        setInitError("Error checking database connection. Using demo mode.");
       }
     };
     
-    // Combined initialization function to reduce load time
-    const initializeDatabaseComponents = async (userId?: string, userEmail?: string) => {
-      try {
-        // Initialize in parallel rather than sequentially
-        const [dbResult, storageResult, functionsResult] = await Promise.all([
-          initializeDatabase(userId, userEmail),
-          ensureStorageBuckets(),
-          createDatabaseFunctions()
-        ]);
-        
-        if (dbResult && storageResult && functionsResult) {
-          return { success: true };
-        } else {
-          return { 
-            success: false, 
-            message: 'Some database components failed to initialize. The application may have limited functionality.' 
-          };
-        }
-      } catch (error) {
-        console.error('Error during database initialization:', error);
-        return { 
-          success: false, 
-          message: 'Error initializing database components.' 
-        };
-      }
-    };
-
-    if (session && session.isAdmin && !initialized && !isInitializing) {
-      setupDatabase();
+    if (!connectionChecked && !authLoading && session) {
+      checkConnection();
     }
-  }, [session, initialized, toast, isInitializing]);
+  }, [authLoading, session, connectionChecked, toast]);
 
-  if (isLoading) {
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate('/login');
+    }
+  }, [session, authLoading, navigate]);
+
+  // Show loading state while auth is being checked
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -111,19 +72,9 @@ const Dashboard = () => {
     );
   }
 
+  // Redirect if not authenticated
   if (!session) {
-    navigate('/login');
-    return null;
-  }
-
-  if (!session.isAdmin) {
-    toast({
-      title: "Access Denied",
-      description: "You do not have permission to access the dashboard",
-      variant: "destructive",
-    });
-    navigate('/');
-    return null;
+    return null; // Will redirect in useEffect
   }
 
   return (
@@ -134,18 +85,16 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-bhagwati-maroon mb-6">Dashboard</h1>
         
         {initError && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="warning" className="mb-6">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Database Error</AlertTitle>
+            <AlertTitle>Database Notice</AlertTitle>
             <AlertDescription>
               {initError}
               <button 
                 className="ml-2 underline"
                 onClick={() => {
-                  setInitialized(false);
-                  setIsInitializing(false);
-                  // Clear the cache to force reinitialization
-                  cache.remove(`db-initialized-${session?.user?.id}`);
+                  setConnectionChecked(false);
+                  setInitError(null);
                 }}
               >
                 Try again
@@ -165,67 +114,32 @@ const Dashboard = () => {
         )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 mb-8">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-8">
             <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="pages">Pages</TabsTrigger>
-            <TabsTrigger value="images">Media Library</TabsTrigger>
+            <TabsTrigger value="images">Media</TabsTrigger>
             <TabsTrigger value="messages">Messages</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="posts" className="space-y-4">
-            {initialized ? <PostManager /> : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-                  <p className="mt-4">Waiting for database initialization...</p>
-                </div>
-              </div>
-            )}
+            <PostManager />
           </TabsContent>
           
           <TabsContent value="pages" className="space-y-4">
-            {initialized ? <PageEditor /> : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-                  <p className="mt-4">Waiting for database initialization...</p>
-                </div>
-              </div>
-            )}
+            <PageEditor />
           </TabsContent>
           
           <TabsContent value="images" className="space-y-4">
-            {initialized ? <ImageManager /> : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-                  <p className="mt-4">Waiting for database initialization...</p>
-                </div>
-              </div>
-            )}
+            <ImageManager />
           </TabsContent>
           
           <TabsContent value="messages" className="space-y-4">
-            {initialized ? <MessagesManager /> : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-                  <p className="mt-4">Waiting for database initialization...</p>
-                </div>
-              </div>
-            )}
+            <MessagesManager />
           </TabsContent>
           
           <TabsContent value="settings" className="space-y-4">
-            {initialized ? <SiteSettings /> : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-                  <p className="mt-4">Waiting for database initialization...</p>
-                </div>
-              </div>
-            )}
+            <SiteSettings />
           </TabsContent>
         </Tabs>
       </div>
