@@ -22,57 +22,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isSupabaseReady, setIsSupabaseReady] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error('Error fetching user:', userError);
-          setSession(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (user) {
-          console.log('User found:', user.id);
-          
-          // Get user roles if they exist
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-          
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching profile:', profileError);
-          }
-          
-          const isAdmin = profile?.role === 'admin';
-          
-          setSession({
-            user: {
-              id: user.id,
-              email: user.email || '',
-              role: profile?.role || 'user',
-            },
-            isAdmin: isAdmin || true, // Default to admin for testing if no role found
-          });
-        } else {
-          console.log('No user found');
-          setSession(null);
-        }
-      } catch (error) {
-        console.error('Error in fetchSession:', error);
+  // Use a more robust session check function
+  const fetchUserSession = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error fetching user:', userError);
         setSession(null);
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
+      
+      if (!user) {
+        console.log('No user found in session');
+        setSession(null);
+        return;
+      }
+      
+      console.log('User found:', user.id);
+      
+      // Get user profile and role
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        const isAdmin = profile?.role === 'admin';
+        
+        setSession({
+          user: {
+            id: user.id,
+            email: user.email || '',
+            role: profile?.role || 'user',
+          },
+          isAdmin: isAdmin || true, // Default to admin for testing if no role found
+        });
+      } catch (profileError) {
+        console.log('Profile not found, setting default admin role');
+        // No profile found, but we still have a user, so create a session
+        setSession({
+          user: {
+            id: user.id,
+            email: user.email || '',
+            role: 'admin', // Default role
+          },
+          isAdmin: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error in fetchUserSession:', error);
+      setSession(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchSession();
-
+  // Initialize session
+  useEffect(() => {
+    fetchUserSession();
+    
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -86,11 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               .eq('id', session.user.id)
               .single();
             
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error('Error fetching profile on auth change:', profileError);
-            }
-            
-            const isAdmin = profile?.role === 'admin' || true; // Default to admin for now
+            const isAdmin = profile?.role === 'admin' || true; // Default to admin for testing
             
             setSession({
               user: {
@@ -102,11 +111,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           } catch (error) {
             console.error('Error in auth state change handler:', error);
+            // Still set the session even if profile fetch fails
+            setSession({
+              user: {
+                id: session.user.id,
+                email: session.user.email || '',
+                role: 'admin', // Default role
+              },
+              isAdmin: true,
+            });
+          } finally {
+            setIsLoading(false);
           }
         } else {
           setSession(null);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     );
 
@@ -132,27 +152,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('Sign in successful:', data);
       
-      // Create profile if it doesn't exist
+      // Create or update profile
       if (data.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist, create it
-          const { error: createError } = await supabase
+        try {
+          // Try to get existing profile
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .insert({ 
-              id: data.user.id, 
-              role: 'admin', // Default to admin for now
-              email: data.user.email 
-            });
-            
-          if (createError) {
-            console.error('Error creating profile:', createError);
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+          
+          if (profileError || !profile) {
+            // Profile doesn't exist, create it
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert({ 
+                id: data.user.id, 
+                role: 'admin', // Default to admin
+                email: data.user.email 
+              });
+              
+            if (createError) {
+              console.error('Error creating profile:', createError);
+            } else {
+              console.log('Created new admin profile');
+            }
+          } else {
+            console.log('Using existing profile');
           }
+          
+          // Update session immediately
+          await fetchUserSession();
+        } catch (error) {
+          console.error('Error checking/creating profile:', error);
         }
       }
       
@@ -178,16 +210,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const contextValue: AuthContextType = {
+    session,
+    isLoading,
+    isSupabaseReady,
+    signIn,
+    signOut,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        session,
-        isLoading,
-        isSupabaseReady,
-        signIn,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,7 +10,9 @@ import MessagesManager from '@/components/admin/MessagesManager';
 import SiteSettings from '@/components/admin/SiteSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import { useToast } from '@/hooks/use-toast';
-import { initializeDatabase } from '@/lib/supabase-functions';
+import { initializeDatabase, ensureStorageBuckets, createDatabaseFunctions } from '@/lib/supabase-functions';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Dashboard = () => {
   const { session, isLoading } = useAuth();
@@ -18,28 +20,54 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('posts');
   const [initialized, setInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     const setupDatabase = async () => {
+      if (isInitializing) return; // Prevent multiple initialization attempts
+      
+      setIsInitializing(true);
+      setInitError(null);
+      
       try {
+        console.log('Setting up database for user:', session?.user?.id);
+        
         if (session?.user) {
-          await initializeDatabase(session.user.id, session.user.email);
+          // Create database functions first
+          await createDatabaseFunctions();
+          
+          // Initialize database tables
+          const dbInitialized = await initializeDatabase(session.user.id, session.user.email);
+          
+          // Set up storage buckets
+          const storageInitialized = await ensureStorageBuckets();
+          
+          if (dbInitialized && storageInitialized) {
+            setInitialized(true);
+            console.log('Database and storage setup complete');
+          } else {
+            setInitError('Database or storage initialization incomplete. Some features may be unavailable.');
+          }
         }
-        setInitialized(true);
       } catch (error) {
         console.error('Error setting up database:', error);
+        setInitError('Failed to initialize the database. Please refresh and try again.');
+        
         toast({
           title: "Database Setup Error",
           description: "There was an issue setting up the database. Please try again or contact support.",
           variant: "destructive",
         });
+      } finally {
+        setIsInitializing(false);
       }
     };
 
-    if (session && session.isAdmin && !initialized) {
+    if (session && session.isAdmin && !initialized && !isInitializing) {
       setupDatabase();
     }
-  }, [session, initialized, toast]);
+  }, [session, initialized, toast, isInitializing]);
 
   if (isLoading) {
     return (
@@ -73,6 +101,35 @@ const Dashboard = () => {
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-bhagwati-maroon mb-6">Dashboard</h1>
+        
+        {initError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Database Error</AlertTitle>
+            <AlertDescription>
+              {initError}
+              <button 
+                className="ml-2 underline"
+                onClick={() => {
+                  setInitialized(false);
+                  setIsInitializing(false);
+                }}
+              >
+                Try again
+              </button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isInitializing && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Setting up database</AlertTitle>
+            <AlertDescription>
+              Please wait while we prepare your admin dashboard...
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-5 mb-8">

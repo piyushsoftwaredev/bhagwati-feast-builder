@@ -1,38 +1,51 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { signIn, session } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Check if already logged in
+  useEffect(() => {
+    if (session && session.user) {
+      const redirectTo = location.state?.from || '/dashboard';
+      navigate(redirectTo, { replace: true });
+    }
+  }, [session, navigate, location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
     
     try {
+      console.log('Attempting login with:', email);
       const { error, success } = await signIn(email, password);
       
       if (error) {
         console.error("Authentication error:", error);
+        setErrorMessage(error.message || "Invalid email or password");
         toast({
           title: "Authentication Failed",
           description: error.message || "Please check your credentials and try again",
           variant: "destructive",
           duration: 5000,
         });
-        setIsLoading(false);
         return;
       }
       
@@ -46,6 +59,7 @@ const Login = () => {
       }
     } catch (error: any) {
       console.error("Unexpected error:", error);
+      setErrorMessage(error.message || "An unexpected error occurred");
       toast({
         title: "Something went wrong",
         description: error.message || "An unexpected error occurred",
@@ -55,6 +69,12 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // For demo/development - provide default login
+  const fillDefaultCredentials = () => {
+    setEmail('admin@example.com');
+    setPassword('password123');
   };
 
   return (
@@ -74,8 +94,18 @@ const Login = () => {
             <CardTitle className="text-2xl font-bold text-center text-bhagwati-maroon">Sign in</CardTitle>
             <CardDescription className="text-center">Enter your email and password to access the admin dashboard</CardDescription>
           </CardHeader>
+          
+          {errorMessage && (
+            <div className="px-6">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 mt-3">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -111,17 +141,37 @@ const Login = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-4">
               <Button 
                 type="submit" 
                 className="w-full bg-bhagwati-maroon hover:bg-bhagwati-maroon/90" 
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Signing in...
+                  </div>
+                ) : "Sign in"}
               </Button>
+              
+              {process.env.NODE_ENV === 'development' && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full text-xs" 
+                  onClick={fillDefaultCredentials}
+                >
+                  Fill Demo Credentials
+                </Button>  
+              )}
             </CardFooter>
           </form>
         </Card>
+        
+        <div className="text-center mt-4 text-sm text-gray-600">
+          <p>For first-time setup, register or use demo credentials.</p>
+        </div>
       </div>
     </div>
   );

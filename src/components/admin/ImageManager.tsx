@@ -12,8 +12,16 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Trash2, Upload, Copy, Check, FolderPlus } from 'lucide-react';
+import { Trash2, Upload, Copy, Check, FolderPlus, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cache } from '@/lib/cache-service';
+
+// Maximum file size in bytes (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// Allowed image types
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const ImageManager = () => {
   const [images, setImages] = useState<ImageAsset[]>([]);
@@ -21,46 +29,75 @@ const ImageManager = () => {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadCount, setUploadCount] = useState<{total: number, success: number, failed: number} | null>(null);
   const { toast } = useToast();
 
   const fetchImages = async () => {
     setLoading(true);
+    setErrorMessage(null);
+    
     try {
-      // List all files in the 'uploads' folder
+      // Check cache first
+      const cachedImages = cache.get<ImageAsset[]>('media-library-images');
+      if (cachedImages) {
+        setImages(cachedImages);
+        setLoading(false);
+        return;
+      }
+      
+      // Ensure uploads folder exists
+      try {
+        await supabase.storage.from('images').list('uploads');
+      } catch (folderError) {
+        // Create folder if it doesn't exist
+        await supabase.storage.from('images').upload('uploads/.gitkeep', new Blob(['']));
+      }
+      
+      // Get all files from storage
       const { data: storageData, error: storageError } = await supabase.storage
         .from('images')
-        .list('uploads');
+        .list('uploads', { sortBy: { column: 'created_at', order: 'desc' } });
 
       if (storageError) throw storageError;
 
-      // Get details from the database if we have them
+      // Get image metadata from the database
       const { data: dbImages, error: dbError } = await supabase
         .from('images')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbError) throw dbError;
+      if (dbError && dbError.code !== 'PGRST116') throw dbError;
       
       // Map storage files to our format, using DB data where available
-      const processedImages: ImageAsset[] = storageData.map(file => {
-        const dbImage = dbImages?.find(dbImg => dbImg.path === `uploads/${file.name}`);
-        const fileUrl = supabase.storage.from('images').getPublicUrl(`uploads/${file.name}`).data.publicUrl;
-        
-        return dbImage || {
-          id: file.id || crypto.randomUUID(),
-          path: `uploads/${file.name}`,
-          url: fileUrl,
-          name: file.name,
-          size: file.metadata?.size || 0,
-          type: file.metadata?.mimetype || 'image/*',
-          created_at: file.created_at || new Date().toISOString(),
-          uploaded_by: 'unknown',
-        };
-      });
+      const processedImages: ImageAsset[] = [];
+      
+      if (storageData && storageData.length > 0) {
+        for (const file of storageData) {
+          if (file.name === '.gitkeep') continue; // Skip placeholder file
+          
+          const dbImage = dbImages?.find(dbImg => dbImg.path === `uploads/${file.name}`);
+          const fileUrl = supabase.storage.from('images').getPublicUrl(`uploads/${file.name}`).data.publicUrl;
+          
+          processedImages.push(dbImage || {
+            id: file.id || crypto.randomUUID(),
+            path: `uploads/${file.name}`,
+            url: fileUrl,
+            name: file.name,
+            size: file.metadata?.size || 0,
+            type: file.metadata?.mimetype || 'image/*',
+            created_at: file.created_at || new Date().toISOString(),
+            uploaded_by: 'unknown',
+          });
+        }
+      }
 
+      // Cache the results
+      cache.set('media-library-images', processedImages, 10); // Cache for 10 minutes
       setImages(processedImages);
     } catch (error: any) {
       console.error('Error fetching images:', error);
+      setErrorMessage('Failed to load images. Please try again.');
       toast({
         title: 'Error loading images',
         description: error.message || 'Failed to load images',
@@ -71,52 +108,115 @@ const ImageManager = () => {
     }
   };
 
+  const validateFile = (file: File): boolean => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: `The file "${file.name}" exceeds the 10MB size limit`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
+    // Check file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: `The file "${file.name}" must be a JPEG, PNG, GIF or WebP image`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
     setUploading(true);
+    setErrorMessage(null);
+    
     let successCount = 0;
     let errorCount = 0;
+    const totalCount = files.length;
+    
+    // Update counts during upload
+    setUploadCount({ total: totalCount, success: 0, failed: 0 });
 
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Check file type
-        if (!file.type.startsWith('image/')) {
+        // Validate file
+        if (!validateFile(file)) {
           errorCount++;
+          setUploadCount(prev => ({ 
+            total: prev?.total || totalCount, 
+            success: prev?.success || 0, 
+            failed: (prev?.failed || 0) + 1 
+          }));
           continue;
         }
+        
+        try {
+          // Create a safe filename (replace spaces, remove special chars)
+          const safeFileName = file.name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w-_.]/g, '')
+            .replace(/--+/g, '-');
+            
+          // Add a timestamp to prevent duplicates
+          const timestamp = Date.now();
+          const fileExt = safeFileName.split('.').pop();
+          const baseName = safeFileName.substring(0, safeFileName.lastIndexOf('.'));
+          const finalFileName = `${baseName}-${timestamp}.${fileExt}`;
+          
+          // Upload to storage
+          const { data, error } = await supabase.storage
+            .from('images')
+            .upload(`uploads/${finalFileName}`, file);
 
-        // Upload to storage
-        const { data, error } = await supabase.storage
-          .from('images')
-          .upload(`uploads/${file.name}`, file);
+          if (error) throw error;
 
-        if (error) {
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage
+            .from('images')
+            .getPublicUrl(`uploads/${finalFileName}`);
+
+          // Save metadata to database
+          await supabase.from('images').insert([{
+            path: `uploads/${finalFileName}`,
+            url: publicUrlData.publicUrl,
+            name: finalFileName,
+            size: file.size,
+            type: file.type,
+          }]);
+
+          successCount++;
+          setUploadCount(prev => ({ 
+            total: prev?.total || totalCount, 
+            success: (prev?.success || 0) + 1, 
+            failed: prev?.failed || 0
+          }));
+        } catch (uploadError: any) {
+          console.error(`Error uploading ${file.name}:`, uploadError);
           errorCount++;
-          continue;
+          setUploadCount(prev => ({ 
+            total: prev?.total || totalCount, 
+            success: prev?.success || 0, 
+            failed: (prev?.failed || 0) + 1
+          }));
         }
-
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from('images')
-          .getPublicUrl(`uploads/${file.name}`);
-
-        // Save metadata to database
-        await supabase.from('images').insert([{
-          path: `uploads/${file.name}`,
-          url: publicUrlData.publicUrl,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        }]);
-
-        successCount++;
       }
 
       if (successCount > 0) {
+        // Clear the cache to force refresh
+        cache.remove('media-library-images');
+        
         toast({
           title: 'Upload Complete',
           description: `Successfully uploaded ${successCount} image${successCount !== 1 ? 's' : ''}`,
@@ -125,6 +225,7 @@ const ImageManager = () => {
       }
 
       if (errorCount > 0) {
+        setErrorMessage(`Failed to upload ${errorCount} image${errorCount !== 1 ? 's' : ''}. Please try again with smaller files or different formats.`);
         toast({
           title: 'Upload Issues',
           description: `Failed to upload ${errorCount} image${errorCount !== 1 ? 's' : ''}`,
@@ -132,7 +233,8 @@ const ImageManager = () => {
         });
       }
     } catch (error: any) {
-      console.error('Error uploading images:', error);
+      console.error('Error handling uploads:', error);
+      setErrorMessage('Error uploading images. Please try again.');
       toast({
         title: 'Upload Error',
         description: error.message || 'There was a problem uploading your images',
@@ -140,6 +242,7 @@ const ImageManager = () => {
       });
     } finally {
       setUploading(false);
+      setUploadCount(null);
       // Clear the input
       e.target.value = '';
     }
@@ -160,9 +263,14 @@ const ImageManager = () => {
         .delete()
         .eq('path', image.path);
 
-      if (dbError) throw dbError;
+      if (dbError && dbError.code !== 'PGRST116') {
+        console.warn('Database delete warning:', dbError);
+      }
 
-      setImages(images.filter(img => img.path !== image.path));
+      // Update the UI and cache
+      const updatedImages = images.filter(img => img.path !== image.path);
+      setImages(updatedImages);
+      cache.set('media-library-images', updatedImages);
       
       toast({
         title: 'Image Deleted',
@@ -210,6 +318,7 @@ const ImageManager = () => {
             onClick={fetchImages}
             disabled={loading}
           >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <div className="relative">
@@ -218,7 +327,7 @@ const ImageManager = () => {
               id="file-upload"
               className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={handleFileUpload}
-              accept="image/*"
+              accept="image/png,image/jpeg,image/gif,image/webp"
               multiple
               disabled={uploading}
             />
@@ -229,6 +338,27 @@ const ImageManager = () => {
           </div>
         </div>
       </div>
+
+      {/* Upload progress */}
+      {uploading && uploadCount && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+          <div 
+            className="bg-bhagwati-gold h-2.5 rounded-full" 
+            style={{ width: `${Math.round((uploadCount.success + uploadCount.failed) / uploadCount.total * 100)}%` }}
+          ></div>
+          <p className="text-sm text-gray-500 mt-1">
+            Uploading {uploadCount.success + uploadCount.failed} of {uploadCount.total} images...
+          </p>
+        </div>
+      )}
+
+      {/* Error message */}
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Search bar */}
       <div className="flex w-full max-w-sm items-center space-x-2">
@@ -264,7 +394,7 @@ const ImageManager = () => {
                     id="file-upload-empty"
                     className="hidden"
                     onChange={handleFileUpload}
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
                     multiple
                     disabled={uploading}
                   />
@@ -282,6 +412,7 @@ const ImageManager = () => {
                   src={image.url}
                   alt={image.name}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2">
@@ -307,7 +438,7 @@ const ImageManager = () => {
                   {image.name}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {format(new Date(image.created_at), 'MMM d, yyyy')}
+                  {image.created_at ? format(new Date(image.created_at), 'MMM d, yyyy') : 'Unknown date'}
                 </p>
               </CardContent>
             </Card>
