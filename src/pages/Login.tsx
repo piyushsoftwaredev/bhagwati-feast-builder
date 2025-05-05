@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock } from 'lucide-react';
@@ -25,12 +25,14 @@ const Login = () => {
       const { error, success } = await signIn(email, password);
       
       if (error) {
+        console.error("Authentication error:", error);
         toast({
           title: "Authentication Failed",
           description: error.message || "Please check your credentials and try again",
           variant: "destructive",
           duration: 5000,
         });
+        setIsLoading(false);
         return;
       }
       
@@ -40,9 +42,10 @@ const Login = () => {
           description: "Welcome back!",
           duration: 3000,
         });
-        navigate('/admin');
+        navigate('/dashboard');
       }
     } catch (error: any) {
+      console.error("Unexpected error:", error);
       toast({
         title: "Something went wrong",
         description: error.message || "An unexpected error occurred",
