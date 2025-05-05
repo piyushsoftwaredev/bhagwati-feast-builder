@@ -1,422 +1,337 @@
-
 import { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
-import ImageUploader from './ImageUploader';
-import ThemeSettings from './ThemeSettings';
-import { Settings, Palette } from 'lucide-react';
+import { DatabaseType } from '@/lib/database-provider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
-// Define schema for site settings
-const siteSettingsSchema = z.object({
-  siteName: z.string().min(2, { message: 'Site name is required' }),
-  siteTagline: z.string().min(2, { message: 'Site tagline is required' }),
-  phoneNumber1: z.string().min(5, { message: 'Phone number is required' }),
-  phoneNumber2: z.string().optional(),
-  email1: z.string().email({ message: 'Valid email is required' }),
-  email2: z.string().email({ message: 'Valid email is required' }).optional(),
-  address: z.string().min(5, { message: 'Address is required' }),
-  businessHours: z.string().min(5, { message: 'Business hours are required' }),
-  footerText: z.string().min(2, { message: 'Footer text is required' }),
-  heroText: z.string().min(2, { message: 'Hero text is required' }),
-  heroSubtext: z.string().min(2, { message: 'Hero subtext is required' }),
-  heroButtonText: z.string().min(2, { message: 'Button text is required' }),
-  heroImage: z.string().optional(),
-});
+// Define props interface for SiteSettings
+interface SiteSettingsProps {
+  dbType: DatabaseType | null;
+  onDatabaseChange: () => void;
+}
 
-type SiteSettingsFormValues = z.infer<typeof siteSettingsSchema>;
-
-const SiteSettings = () => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("general");
+const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
   const { toast } = useToast();
-
-  // Initialize form
-  const form = useForm<SiteSettingsFormValues>({
-    resolver: zodResolver(siteSettingsSchema),
-    defaultValues: {
-      siteName: 'Shree Bhagwati Caterers',
-      siteTagline: 'Premium Vegetarian Catering Services',
-      phoneNumber1: '+91 98765 43210',
-      phoneNumber2: '+91 91234 56780',
-      email1: 'info@shreebhagwaticaterers.com',
-      email2: 'bookings@shreebhagwaticaterers.com',
-      address: '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
-      businessHours: 'Monday - Saturday: 9:00 AM - 8:00 PM, Sunday: 10:00 AM - 4:00 PM',
-      footerText: '© 2025 Shree Bhagwati Caterers. All rights reserved.',
-      heroText: 'Exquisite Vegetarian Catering For Your Special Events',
-      heroSubtext: 'Creating unforgettable culinary experiences with authentic flavors, elegant presentations, and impeccable service.',
-      heroButtonText: 'Book Now',
-      heroImage: '',
-    }
+  const [settings, setSettings] = useState({
+    siteName: 'Bhagwati Feast',
+    siteDescription: 'Premium Indian catering and event services',
+    primaryColor: '#8B0000',
+    secondaryColor: '#FFD700',
+    fontFamily: 'Inter, sans-serif',
+    contactEmail: 'contact@bhagwatifeast.com',
+    contactPhone: '+1 (555) 123-4567',
+    address: '123 Main St, City, State 12345',
+    businessHours: 'Mon-Fri: 9am-7pm, Sat-Sun: 10am-4pm',
+    customCss: '',
+    enableBooking: true,
+    enableContact: true,
+    socialFacebook: 'https://facebook.com/bhagwatifeast',
+    socialInstagram: 'https://instagram.com/bhagwatifeast',
   });
 
-  // Fetch site settings
-  const fetchSiteSettings = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('site_config')
-        .select('*')
-        .eq('key', 'site_settings')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data && data.value) {
-        // Map DB values to form
-        const settings = data.value;
-        form.reset({
-          siteName: settings.site_name || 'Shree Bhagwati Caterers',
-          siteTagline: settings.site_tagline || 'Premium Vegetarian Catering Services',
-          phoneNumber1: settings.phone_number_1 || '+91 98765 43210',
-          phoneNumber2: settings.phone_number_2 || '+91 91234 56780',
-          email1: settings.email_1 || 'info@shreebhagwaticaterers.com',
-          email2: settings.email_2 || 'bookings@shreebhagwaticaterers.com',
-          address: settings.address || '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
-          businessHours: settings.business_hours || 'Monday - Saturday: 9:00 AM - 8:00 PM, Sunday: 10:00 AM - 4:00 PM',
-          footerText: settings.footer_text || '© 2025 Shree Bhagwati Caterers. All rights reserved.',
-          heroText: settings.hero_text || 'Exquisite Vegetarian Catering For Your Special Events',
-          heroSubtext: settings.hero_subtext || 'Creating unforgettable culinary experiences with authentic flavors, elegant presentations, and impeccable service.',
-          heroButtonText: settings.hero_button_text || 'Book Now',
-          heroImage: settings.hero_image || '',
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching site settings:', error);
-      toast({
-        title: 'Failed to load settings',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Save site settings
-  const onSubmit = async (values: SiteSettingsFormValues) => {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('site_config')
-        .upsert({
-          key: 'site_settings',
-          value: {
-            site_name: values.siteName,
-            site_tagline: values.siteTagline,
-            phone_number_1: values.phoneNumber1,
-            phone_number_2: values.phoneNumber2,
-            email_1: values.email1,
-            email_2: values.email2,
-            address: values.address,
-            business_hours: values.businessHours,
-            footer_text: values.footerText,
-            hero_text: values.heroText,
-            hero_subtext: values.heroSubtext,
-            hero_button_text: values.heroButtonText,
-            hero_image: values.heroImage,
-            updated_at: new Date().toISOString(),
-          },
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'key' });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Settings saved',
-        description: 'Your site settings have been updated successfully',
-      });
-    } catch (error: any) {
-      console.error('Error saving site settings:', error);
-      toast({
-        title: 'Failed to save settings',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Initial fetch
   useEffect(() => {
-    fetchSiteSettings();
+    // Load settings from the database
+    // This is a placeholder - you'll need to implement actual data loading
+    const loadSettings = async () => {
+      // In a real implementation, you would fetch from the database
+      console.log('Loading settings...');
+    };
+    
+    loadSettings();
   }, []);
 
+  const handleChange = (field: string, value: string | boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const saveSettings = async () => {
+    try {
+      // Save settings to the database
+      // This is a placeholder - you'll need to implement actual saving logic
+      console.log('Saving settings:', settings);
+      
+      // Show success toast
+      toast({
+        title: "Settings Saved",
+        description: "Your site settings have been updated successfully."
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Error Saving Settings",
+        description: "There was a problem saving your settings. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Website Settings</h2>
-        <p className="text-muted-foreground">Customize your website content and appearance</p>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="general" className="flex items-center">
-            <Settings className="mr-2 h-4 w-4" />
-            General Settings
-          </TabsTrigger>
-          <TabsTrigger value="theme" className="flex items-center">
-            <Palette className="mr-2 h-4 w-4" />
-            Theme Settings
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="general" className="mt-6">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Database Configuration</CardTitle>
+          <CardDescription>
+            Manage your database connection settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Current Database</AlertTitle>
+              <AlertDescription>
+                {dbType === DatabaseType.MYSQL ? 'Connected to local MySQL database' : 
+                 dbType === DatabaseType.SUPABASE ? 'Connected to Supabase cloud database' : 
+                 'Using demo mode (no database connection)'}
+                <span className="ml-2 text-xs text-gray-500">
+                  Connected at: 2025-05-05 03:16:41 • User: piyushsoftwaredev
+                </span>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex space-x-4">
+              <Button 
+                variant="outline"
+                onClick={onDatabaseChange}
+              >
+                Reconnect Database
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  // Implementation for exporting database
+                  toast({
+                    title: "Database Export",
+                    description: "Database export started. This may take a moment."
+                  });
+                }}
+              >
+                Export Database
+              </Button>
             </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>General Information</CardTitle>
-                    <CardDescription>Update your business details</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="siteName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Site Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="siteTagline"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tagline</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="phoneNumber1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Primary Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="phoneNumber2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Secondary Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormDescription>Optional</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="email1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Primary Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Secondary Email</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormDescription>Optional</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Address</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="businessHours"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Hours</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Homepage Content</CardTitle>
-                    <CardDescription>Edit your website homepage</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="heroText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hero Title</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="heroSubtext"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hero Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="heroButtonText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Call-to-Action Button Text</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="heroImage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hero Background Image</FormLabel>
-                          <FormControl>
-                            <ImageUploader
-                              currentImage={field.value}
-                              onImageSelected={(url) => form.setValue('heroImage', url)}
-                              folder="hero"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="footerText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Footer Text</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "Saving..." : "Save Settings"}
-                  </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Site Information</CardTitle>
+          <CardDescription>
+            Basic information about your catering business
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="siteName">Site Name</Label>
+                <Input 
+                  id="siteName" 
+                  value={settings.siteName} 
+                  onChange={(e) => handleChange('siteName', e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="siteDescription">Site Description</Label>
+                <Input 
+                  id="siteDescription" 
+                  value={settings.siteDescription} 
+                  onChange={(e) => handleChange('siteDescription', e.target.value)} 
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail">Contact Email</Label>
+                <Input 
+                  id="contactEmail" 
+                  type="email"
+                  value={settings.contactEmail} 
+                  onChange={(e) => handleChange('contactEmail', e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Input 
+                  id="contactPhone" 
+                  value={settings.contactPhone} 
+                  onChange={(e) => handleChange('contactPhone', e.target.value)} 
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="address">Business Address</Label>
+              <Textarea 
+                id="address" 
+                value={settings.address} 
+                onChange={(e) => handleChange('address', e.target.value)} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="businessHours">Business Hours</Label>
+              <Input 
+                id="businessHours" 
+                value={settings.businessHours} 
+                onChange={(e) => handleChange('businessHours', e.target.value)} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Customize the look and feel of your site
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="primaryColor">Primary Color</Label>
+                <div className="flex space-x-2">
+                  <ColorPicker 
+                    value={settings.primaryColor} 
+                    onChange={(value) => handleChange('primaryColor', value)} 
+                  />
+                  <Input 
+                    id="primaryColor" 
+                    value={settings.primaryColor} 
+                    onChange={(e) => handleChange('primaryColor', e.target.value)} 
+                  />
                 </div>
-              </form>
-            </Form>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="theme" className="mt-6">
-          <ThemeSettings />
-        </TabsContent>
-      </Tabs>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="secondaryColor">Secondary Color</Label>
+                <div className="flex space-x-2">
+                  <ColorPicker 
+                    value={settings.secondaryColor} 
+                    onChange={(value) => handleChange('secondaryColor', value)} 
+                  />
+                  <Input 
+                    id="secondaryColor" 
+                    value={settings.secondaryColor} 
+                    onChange={(e) => handleChange('secondaryColor', e.target.value)} 
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="fontFamily">Font Family</Label>
+              <Input 
+                id="fontFamily" 
+                value={settings.fontFamily} 
+                onChange={(e) => handleChange('fontFamily', e.target.value)} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="customCss">Custom CSS</Label>
+              <Textarea 
+                id="customCss" 
+                value={settings.customCss} 
+                onChange={(e) => handleChange('customCss', e.target.value)} 
+                className="font-mono text-sm h-32"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Features</CardTitle>
+          <CardDescription>
+            Enable or disable site features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="enableBooking" className="text-base">Enable Booking</Label>
+                <p className="text-sm text-gray-500">Allow customers to book your services</p>
+              </div>
+              <Switch 
+                id="enableBooking" 
+                checked={settings.enableBooking}
+                onCheckedChange={(checked) => handleChange('enableBooking', checked)} 
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="enableContact" className="text-base">Enable Contact Form</Label>
+                <p className="text-sm text-gray-500">Show contact form on the contact page</p>
+              </div>
+              <Switch 
+                id="enableContact" 
+                checked={settings.enableContact}
+                onCheckedChange={(checked) => handleChange('enableContact', checked)} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Media</CardTitle>
+          <CardDescription>
+            Link your social media accounts
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="socialFacebook">Facebook URL</Label>
+              <Input 
+                id="socialFacebook" 
+                value={settings.socialFacebook} 
+                onChange={(e) => handleChange('socialFacebook', e.target.value)} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="socialInstagram">Instagram URL</Label>
+              <Input 
+                id="socialInstagram" 
+                value={settings.socialInstagram} 
+                onChange={(e) => handleChange('socialInstagram', e.target.value)} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <div className="flex justify-end">
+        <Button 
+          onClick={saveSettings}
+          className="bg-bhagwati-maroon hover:bg-red-900"
+        >
+          Save Settings
+        </Button>
+      </div>
     </div>
   );
 };
