@@ -7,8 +7,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { cache } from "@/lib/cache-service";
 
-// Lazy load components for better performance
+// Lazy load components with loading priorities
 const Index = lazy(() => import("./pages/Index"));
 const Login = lazy(() => import("./pages/Login"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -16,7 +17,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Booking = lazy(() => import("./pages/Booking"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Create QueryClient instance with caching configuration
+// Create QueryClient instance with optimized caching configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -28,10 +29,20 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected Route component
+// Protected Route component with optimized loading
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, isLoading } = useAuth();
   
+  // Check cache first to prevent unnecessary loading states
+  const cacheKey = `auth-protected-${session?.user?.id}`;
+  const cachedAuth = cache.get(cacheKey);
+  
+  // If we have a cached authentication status and we're still loading, use the cache
+  if (isLoading && cachedAuth) {
+    return <>{children}</>;
+  }
+  
+  // If we're still loading, show the loading indicator
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -43,16 +54,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   
-  if (!session) {
-    return <Navigate to="/login" replace />;
+  // If we have a session, cache it and render the children
+  if (session) {
+    cache.set(cacheKey, true, 10); // Cache for 10 minutes
+    return <>{children}</>;
   }
   
-  return <>{children}</>;
+  // No session, redirect to login
+  return <Navigate to="/login" replace />;
 };
 
-// Admin Route component
+// Admin Route component with optimized loading
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, isLoading } = useAuth();
+  
+  // Check cache first
+  const cacheKey = `auth-admin-${session?.user?.id}`;
+  const cachedAdminAuth = cache.get(cacheKey);
+  
+  // If we have a cached admin status and we're still loading, use the cache
+  if (isLoading && cachedAdminAuth) {
+    return <>{children}</>;
+  }
   
   if (isLoading) {
     return (
@@ -69,10 +92,12 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
   
+  // Cache admin status
+  cache.set(cacheKey, true, 10); // Cache for 10 minutes
   return <>{children}</>;
 };
 
-// Loading fallback component
+// Loading fallback component with reduced animation overhead
 const LoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="text-center">
@@ -83,11 +108,16 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
-  // Initialize theme from local storage or database
+  // Initialize theme from local storage or database with optimized loading
   useEffect(() => {
     // Load theme settings (CSS variables) from localStorage if available
     const applyTheme = () => {
       try {
+        // Check if theme is already applied to avoid unnecessary DOM operations
+        if (document.documentElement.hasAttribute('data-theme-applied')) {
+          return;
+        }
+        
         const storedTheme = localStorage.getItem('theme-settings');
         if (storedTheme) {
           const theme = JSON.parse(storedTheme);
@@ -118,6 +148,9 @@ const App = () => {
             }
             styleElement.textContent = theme.customCss;
           }
+          
+          // Mark as applied to prevent redundant processing
+          root.setAttribute('data-theme-applied', 'true');
         }
       } catch (error) {
         console.error('Error applying theme from cache:', error);

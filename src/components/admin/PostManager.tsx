@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase, Post } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { cache } from '@/lib/cache-service';
 import {
   Card,
   CardContent,
@@ -22,10 +23,6 @@ import {
 } from '@/components/ui/table';
 import { Pencil, Trash2, PlusCircle, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import PostEditor from './PostEditor';
 
@@ -37,9 +34,22 @@ const PostManager = () => {
   
   const { toast } = useToast();
 
-  // Fetch all posts
-  const fetchPosts = async () => {
+  // Memoized fetch posts function
+  const fetchPosts = useCallback(async (useCache = true) => {
     setLoading(true);
+    
+    // Check cache first if enabled
+    const cacheKey = 'posts-list';
+    if (useCache) {
+      const cachedPosts = cache.get<Post[]>(cacheKey);
+      if (cachedPosts) {
+        setPosts(cachedPosts);
+        setLoading(false);
+        console.log('Using cached posts data');
+        return;
+      }
+    }
+    
     try {
       const { data, error } = await supabase
         .from('posts')
@@ -47,20 +57,25 @@ const PostManager = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPosts(data || []);
+      
+      const postsData = data || [];
+      setPosts(postsData);
+      
+      // Cache the results
+      cache.set(cacheKey, postsData, 5); // Cache for 5 minutes
     } catch (error: any) {
       console.error('Error fetching posts:', error);
       toast({
         title: 'Error loading posts',
-        description: error.message || 'Failed to load posts',
+        description: error.message || 'Failed to load posts. Ensure your database is properly set up.',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  // Delete a post
+  // Delete a post with cache invalidation
   const deletePost = async (id: string) => {
     try {
       const { error } = await supabase
@@ -71,6 +86,10 @@ const PostManager = () => {
       if (error) throw error;
       
       setPosts(posts.filter(post => post.id !== id));
+      
+      // Invalidate cache
+      cache.remove('posts-list');
+      
       toast({
         title: 'Post Deleted',
         description: 'Post has been deleted successfully',
@@ -85,8 +104,14 @@ const PostManager = () => {
     }
   };
 
-  // Toggle post published status
+  // Toggle post published status with optimistic updates
   const togglePublished = async (post: Post) => {
+    // Optimistic update for better UX
+    const updatedPosts = posts.map(p => 
+      p.id === post.id ? { ...p, published: !p.published } : p
+    );
+    setPosts(updatedPosts);
+    
     try {
       const { error } = await supabase
         .from('posts')
@@ -95,12 +120,16 @@ const PostManager = () => {
 
       if (error) throw error;
       
-      setPosts(posts.map(p => p.id === post.id ? { ...p, published: !p.published } : p));
+      // Update cache
+      cache.set('posts-list', updatedPosts, 5);
+      
       toast({
         title: post.published ? 'Post Unpublished' : 'Post Published',
         description: `The post is now ${post.published ? 'unpublished' : 'published'}`,
       });
     } catch (error: any) {
+      // Revert optimistic update on error
+      setPosts(posts);
       console.error('Error toggling post status:', error);
       toast({
         title: 'Error updating post',
@@ -113,14 +142,15 @@ const PostManager = () => {
   // Update posts when dialog closes
   useEffect(() => {
     if (!isDialogOpen) {
-      fetchPosts();
+      // Use cache when the dialog closes to reduce loading time
+      fetchPosts(false); // Force refresh when dialog closes
     }
-  }, [isDialogOpen]);
+  }, [isDialogOpen, fetchPosts]);
 
   // Initial fetch
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,7 @@ import SiteSettings from '@/components/admin/SiteSettings';
 import AdminNav from '@/components/admin/AdminNav';
 import { useToast } from '@/hooks/use-toast';
 import { initializeDatabase, ensureStorageBuckets, createDatabaseFunctions } from '@/lib/supabase-functions';
+import { cache } from '@/lib/cache-service';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,6 +28,13 @@ const Dashboard = () => {
     const setupDatabase = async () => {
       if (isInitializing) return; // Prevent multiple initialization attempts
       
+      // Check if we've already initialized in this session via cache
+      const cacheKey = `db-initialized-${session?.user?.id}`;
+      if (cache.has(cacheKey)) {
+        setInitialized(true);
+        return;
+      }
+      
       setIsInitializing(true);
       setInitError(null);
       
@@ -34,25 +42,21 @@ const Dashboard = () => {
         console.log('Setting up database for user:', session?.user?.id);
         
         if (session?.user) {
-          // Create database functions first
-          await createDatabaseFunctions();
+          // Use a single comprehensive initialization function
+          const { success, message } = await initializeDatabaseComponents(session.user.id, session.user.email);
           
-          // Initialize database tables
-          const dbInitialized = await initializeDatabase(session.user.id, session.user.email);
-          
-          // Set up storage buckets
-          const storageInitialized = await ensureStorageBuckets();
-          
-          if (dbInitialized && storageInitialized) {
+          if (success) {
             setInitialized(true);
+            // Cache the initialization status for 30 minutes
+            cache.set(cacheKey, true, 30);
             console.log('Database and storage setup complete');
           } else {
-            setInitError('Database or storage initialization incomplete. Some features may be unavailable.');
+            setInitError(message || 'Database initialization incomplete. Some features may be unavailable.');
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error setting up database:', error);
-        setInitError('Failed to initialize the database. Please refresh and try again.');
+        setInitError('Failed to initialize the database. Please try again or contact support.');
         
         toast({
           title: "Database Setup Error",
@@ -61,6 +65,33 @@ const Dashboard = () => {
         });
       } finally {
         setIsInitializing(false);
+      }
+    };
+    
+    // Combined initialization function to reduce load time
+    const initializeDatabaseComponents = async (userId?: string, userEmail?: string) => {
+      try {
+        // Initialize in parallel rather than sequentially
+        const [dbResult, storageResult, functionsResult] = await Promise.all([
+          initializeDatabase(userId, userEmail),
+          ensureStorageBuckets(),
+          createDatabaseFunctions()
+        ]);
+        
+        if (dbResult && storageResult && functionsResult) {
+          return { success: true };
+        } else {
+          return { 
+            success: false, 
+            message: 'Some database components failed to initialize. The application may have limited functionality.' 
+          };
+        }
+      } catch (error) {
+        console.error('Error during database initialization:', error);
+        return { 
+          success: false, 
+          message: 'Error initializing database components.' 
+        };
       }
     };
 
@@ -113,6 +144,8 @@ const Dashboard = () => {
                 onClick={() => {
                   setInitialized(false);
                   setIsInitializing(false);
+                  // Clear the cache to force reinitialization
+                  cache.remove(`db-initialized-${session?.user?.id}`);
                 }}
               >
                 Try again
@@ -141,23 +174,58 @@ const Dashboard = () => {
           </TabsList>
           
           <TabsContent value="posts" className="space-y-4">
-            <PostManager />
+            {initialized ? <PostManager /> : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+                  <p className="mt-4">Waiting for database initialization...</p>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="pages" className="space-y-4">
-            <PageEditor />
+            {initialized ? <PageEditor /> : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+                  <p className="mt-4">Waiting for database initialization...</p>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="images" className="space-y-4">
-            <ImageManager />
+            {initialized ? <ImageManager /> : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+                  <p className="mt-4">Waiting for database initialization...</p>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="messages" className="space-y-4">
-            <MessagesManager />
+            {initialized ? <MessagesManager /> : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+                  <p className="mt-4">Waiting for database initialization...</p>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="settings" className="space-y-4">
-            <SiteSettings />
+            {initialized ? <SiteSettings /> : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
+                  <p className="mt-4">Waiting for database initialization...</p>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
