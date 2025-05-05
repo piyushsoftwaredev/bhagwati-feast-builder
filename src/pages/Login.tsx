@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
@@ -33,9 +34,20 @@ const Login = () => {
     setIsLoading(true);
     setErrorMessage(null);
     
+    // Set a timeout to avoid the UI being stuck in loading state
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setErrorMessage("Login is taking too long. Please try again.");
+        sonnerToast.error("Login timed out. Please try again.");
+      }
+    }, 10000); // 10 seconds timeout
+    
     try {
       console.log('Attempting login with:', email);
       const { error, success } = await signIn(email, password);
+      
+      clearTimeout(timeout); // Clear timeout on success/error
       
       if (error) {
         console.error("Authentication error:", error);
@@ -55,9 +67,11 @@ const Login = () => {
           description: "Welcome back!",
           duration: 3000,
         });
+        sonnerToast.success("Login successful!");
         navigate('/dashboard');
       }
     } catch (error: any) {
+      clearTimeout(timeout); // Clear timeout on exception
       console.error("Unexpected error:", error);
       setErrorMessage(error.message || "An unexpected error occurred");
       toast({
@@ -73,8 +87,8 @@ const Login = () => {
 
   // For demo/development - provide default login
   const fillDefaultCredentials = () => {
-    setEmail('admin@example.com');
-    setPassword('password123');
+    setEmail('demo@example.com');
+    setPassword('demo123');
   };
 
   return (
@@ -155,22 +169,20 @@ const Login = () => {
                 ) : "Sign in"}
               </Button>
               
-              {process.env.NODE_ENV === 'development' && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full text-xs" 
-                  onClick={fillDefaultCredentials}
-                >
-                  Fill Demo Credentials
-                </Button>  
-              )}
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full text-sm" 
+                onClick={fillDefaultCredentials}
+              >
+                Use Demo Login
+              </Button>
             </CardFooter>
           </form>
         </Card>
         
         <div className="text-center mt-4 text-sm text-gray-600">
-          <p>For first-time setup, register or use demo credentials.</p>
+          <p>For demo access, use the credentials above.</p>
         </div>
       </div>
     </div>

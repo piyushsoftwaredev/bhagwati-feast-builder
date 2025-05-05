@@ -1,4 +1,3 @@
-
 import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -184,8 +183,8 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/booking" element={<Booking />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
