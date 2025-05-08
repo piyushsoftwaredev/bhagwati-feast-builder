@@ -4,6 +4,7 @@ export enum DatabaseType {
   SUPABASE = 'supabase',
   JSON = 'json',
   MYSQL = 'mysql',
+  DEMO = 'demo',  // Added for demo mode
   NONE = 'none'
 }
 
@@ -51,4 +52,28 @@ export const databaseProviders: DatabaseProvider[] = [
 // Get database provider by type
 export const getDatabaseProvider = (type: DatabaseType): DatabaseProvider => {
   return databaseProviders.find(provider => provider.type === type) || databaseProviders[3];
+};
+
+// Initialize database provider
+export const initializeDatabaseProvider = async (forceCheck = false): Promise<DatabaseType> => {
+  try {
+    // Implementation placeholder - would check connection to different DBs
+    // Default to Supabase since it's implemented
+    return DatabaseType.SUPABASE;
+  } catch (error) {
+    console.error("Error initializing database provider:", error);
+    return DatabaseType.DEMO;
+  }
+};
+
+// Initialize the database (creating tables, etc.)
+export const initializeDatabase = async (userId?: string, userEmail?: string): Promise<boolean> => {
+  try {
+    // This function can call the actual implementation in supabase-functions.ts
+    const { initializeDatabase: initSupabaseDB } = await import('./supabase-functions');
+    return await initSupabaseDB(userId, userEmail);
+  } catch (error) {
+    console.error("Error in database initialization:", error);
+    return false;
+  }
 };
