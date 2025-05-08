@@ -1,3 +1,4 @@
+
 // Simple in-memory cache implementation
 type CacheEntry = {
   value: any;
@@ -17,7 +18,7 @@ class CacheService {
   }
 
   // Get a value from the cache
-  get(key: string): any {
+  get<T = any>(key: string): T | undefined {
     const entry = this.cache.get(key);
     
     if (!entry) {

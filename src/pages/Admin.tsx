@@ -8,9 +8,17 @@ import ImageManager from '@/components/admin/ImageManager';
 import MessagesManager from '@/components/admin/MessagesManager';
 import MapSettings from '@/components/admin/MapSettings';
 import { MessageSquare, Settings, Database, ImageIcon, Map } from 'lucide-react';
+import { DatabaseType } from '@/lib/database-provider';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState('site-settings');
+  const [dbType, setDbType] = useState<DatabaseType>(DatabaseType.SUPABASE);
+  
+  // Function to handle database connection changes
+  const handleDatabaseChange = () => {
+    // In a real implementation, this would show a modal to reconnect the database
+    console.log('Reconnecting database...');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,7 +56,7 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="site-settings">
-            <SiteSettings />
+            <SiteSettings dbType={dbType} onDatabaseChange={handleDatabaseChange} />
           </TabsContent>
           
           <TabsContent value="map-settings">

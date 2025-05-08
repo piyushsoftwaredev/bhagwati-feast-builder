@@ -3,8 +3,10 @@ import { supabase } from './supabase';
 import mysql from 'mysql2/promise';
 
 export enum DatabaseType {
-  MYSQL = 'mysql',
-  DEMO = 'demo',
+  NONE = 'NONE',
+  MYSQL = 'MYSQL',
+  SUPABASE = 'SUPABASE',
+  DEMO = 'DEMO'
 }
 
 // Store database connection info

@@ -1,21 +1,18 @@
-
 import { useState, useEffect } from 'react';
-import { supabase, ImageAsset, deleteImage } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Trash2, Upload, Copy, Check, FolderPlus, RefreshCw, AlertCircle } from 'lucide-react';
+import { Trash2, Upload, Copy, Check, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cache } from '@/lib/cache-service';
+import { ImageAsset } from '@/lib/supabase';
 
 // Maximum file size in bytes (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -39,7 +36,7 @@ const ImageManager = () => {
     
     try {
       // Check cache first
-      const cachedImages = cache.get<ImageAsset[]>('media-library-images');
+      const cachedImages = cache.get('media-library-images');
       if (cachedImages) {
         setImages(cachedImages);
         setLoading(false);
@@ -215,7 +212,7 @@ const ImageManager = () => {
 
       if (successCount > 0) {
         // Clear the cache to force refresh
-        cache.remove('media-library-images');
+        cache.delete('media-library-images');
         
         toast({
           title: 'Upload Complete',
@@ -270,7 +267,7 @@ const ImageManager = () => {
       // Update the UI and cache
       const updatedImages = images.filter(img => img.path !== image.path);
       setImages(updatedImages);
-      cache.set('media-library-images', updatedImages);
+      cache.set('media-library-images', updatedImages, 10);
       
       toast({
         title: 'Image Deleted',
