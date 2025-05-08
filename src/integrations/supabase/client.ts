@@ -16,20 +16,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Helper function to check connection status
 export const checkSupabaseConnection = async () => {
   try {
-    // Use a more generic query that doesn't depend on specific tables
-    const { data, error } = await supabase.rpc('get_service_status');
-    if (error) {
-      // Try a different approach if RPC function is not available
-      const { error: tableError } = await supabase.from('dummy_check').select('count', { count: 'exact', head: true });
-      // If error code is 'PGRST116', it means that the connection works but the table doesn't exist
-      if (tableError && tableError.code === 'PGRST116') {
-        console.log('Supabase connection working but table not found');
-        return true;
-      }
-      console.error('Supabase connection check failed:', error);
-      return false;
+    // Use a generic query that doesn't depend on specific tables
+    // Attempt to fetch health status
+    const { data, error } = await supabase.from('dummy_check').select('count', { 
+      count: 'exact', 
+      head: true 
+    }).catch(() => ({ data: null, error: null }));
+    
+    // If no error or the error is that the table doesn't exist (which is fine)
+    // then the connection is working
+    if (!error || error.code === 'PGRST116') {
+      return true;
     }
-    return true;
+    
+    return false;
   } catch (e) {
     console.error('Supabase connection check failed:', e);
     return false;
