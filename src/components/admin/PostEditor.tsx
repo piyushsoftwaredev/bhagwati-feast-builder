@@ -33,9 +33,10 @@ type FormValues = z.infer<typeof formSchema>;
 interface PostEditorProps {
   post?: Post | null;
   onSave?: () => void;
+  isDemo?: boolean;
 }
 
-const PostEditor = ({ post, onSave }: PostEditorProps) => {
+const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
   const { toast } = useToast();
   const { session } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +53,7 @@ const PostEditor = ({ post, onSave }: PostEditorProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!session?.user?.id) {
+    if (!session?.user?.id && !isDemo) {
       toast({
         title: 'Authentication Error',
         description: 'You must be logged in to create or edit posts',
@@ -68,6 +69,18 @@ const PostEditor = ({ post, onSave }: PostEditorProps) => {
         featured_image: featuredImage,
         updated_at: new Date().toISOString(),
       };
+
+      if (isDemo) {
+        // Handle demo mode - just simulate success
+        setTimeout(() => {
+          toast({
+            title: post?.id ? 'Post Updated' : 'Post Created',
+            description: `The post has been ${post?.id ? 'updated' : 'created'} successfully in demo mode`,
+          });
+          if (onSave) onSave();
+        }, 500);
+        return;
+      }
 
       if (post?.id) {
         // Update existing post
@@ -88,7 +101,7 @@ const PostEditor = ({ post, onSave }: PostEditorProps) => {
           .from('posts')
           .insert([{
             ...postData,
-            author_id: session.user.id,
+            author_id: session?.user?.id || 'demo-user',
             created_at: new Date().toISOString(),
           }]);
 

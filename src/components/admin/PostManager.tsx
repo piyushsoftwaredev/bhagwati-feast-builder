@@ -18,7 +18,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Pencil, Trash2, PlusCircle, Eye, EyeOff } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import PostEditor from './PostEditor';
 

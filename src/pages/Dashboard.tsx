@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,7 +64,6 @@ const Dashboard = () => {
                 toast({
                   title: "Database Connected",
                   description: `Connected to MySQL database.`,
-                  variant: "default",
                 });
               } else {
                 setInitError("Database initialization failed. Using demo mode.");
