@@ -15,6 +15,7 @@ export interface DatabaseProvider {
   description: string;
   icon: string;
   isConnected: boolean;
+  maxFileSizeMB?: number;
 }
 
 // Available database providers
@@ -25,6 +26,7 @@ export const databaseProviders: DatabaseProvider[] = [
     description: 'PostgreSQL database with realtime capabilities',
     icon: '/icons/supabase.svg',
     isConnected: true,
+    maxFileSizeMB: 50,
   },
   {
     type: DatabaseType.JSON,
@@ -32,6 +34,7 @@ export const databaseProviders: DatabaseProvider[] = [
     description: 'Local JSON file storage',
     icon: '/icons/json.svg',
     isConnected: false,
+    maxFileSizeMB: 5,
   },
   {
     type: DatabaseType.MYSQL,
@@ -39,6 +42,7 @@ export const databaseProviders: DatabaseProvider[] = [
     description: 'MySQL database',
     icon: '/icons/mysql.svg',
     isConnected: false,
+    maxFileSizeMB: 25,
   },
   {
     type: DatabaseType.NONE,
@@ -46,6 +50,7 @@ export const databaseProviders: DatabaseProvider[] = [
     description: 'No database connection',
     icon: '/icons/no-database.svg',
     isConnected: false,
+    maxFileSizeMB: 2,
   }
 ];
 

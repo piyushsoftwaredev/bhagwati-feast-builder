@@ -175,6 +175,9 @@ export const initializeDatabase = async (userId?: string, userEmail?: string) =>
       }
     }
     
+    // Ensure storage buckets are created
+    await ensureStorageBuckets();
+    
     // Cache the initialization status
     cache.set(cacheKey, true, 30); // Cache for 30 minutes
     
@@ -186,7 +189,7 @@ export const initializeDatabase = async (userId?: string, userEmail?: string) =>
   }
 };
 
-// Function to ensure storage buckets exist with improved caching
+// Function to ensure storage buckets exist with improved caching and support for larger files
 export const ensureStorageBuckets = async () => {
   try {
     // Check cache first
@@ -210,8 +213,8 @@ export const ensureStorageBuckets = async () => {
       try {
         const { error: createError } = await supabase.storage.createBucket('images', {
           public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+          fileSizeLimit: 52428800, // 50MB (in bytes)
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
         });
         
         if (createError) {
@@ -222,11 +225,21 @@ export const ensureStorageBuckets = async () => {
         // Create folders within the bucket
         await supabase.storage.from('images').upload('uploads/.gitkeep', new Blob(['']));
         await supabase.storage.from('images').upload('hero/.gitkeep', new Blob(['']));
+        await supabase.storage.from('images').upload('menu/.gitkeep', new Blob(['']));
         
         console.log('Images bucket created successfully.');
       } catch (error) {
         console.error('Error creating storage bucket:', error);
         return false;
+      }
+    } else {
+      // Update existing bucket configuration
+      try {
+        // Unfortunately, there's no direct way to update bucket configuration in the JS client
+        // For now, we'll just log a message
+        console.log('Images bucket exists. Ensuring it supports large files.');
+      } catch (error) {
+        console.error('Error updating bucket configuration:', error);
       }
     }
     

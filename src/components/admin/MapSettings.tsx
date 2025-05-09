@@ -1,421 +1,291 @@
 
 import { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { Map, MapPin } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
 
-// Define schema for map settings
-const mapSettingsSchema = z.object({
-  mapboxToken: z.string().min(1, { message: 'API key is required' }),
-  latitude: z.string().regex(/^-?[0-9]\d*(\.\d+)?$/, { message: 'Must be a valid latitude' }),
-  longitude: z.string().regex(/^-?[0-9]\d*(\.\d+)?$/, { message: 'Must be a valid longitude' }),
-  zoom: z.number().min(1).max(20),
-  mapStyle: z.string(),
-  showMapOnHomepage: z.boolean(),
-  showMapInFooter: z.boolean(),
-  mapHeight: z.number().min(200).max(800),
-  pinTitle: z.string(),
-  pinDescription: z.string(),
-});
+// Define the map settings interface
+interface MapSettings {
+  mapbox_token: string;
+  latitude: string;
+  longitude: string;
+  zoom: number;
+  map_style: string;
+  show_map_on_homepage: boolean;
+  show_map_in_footer: boolean;
+  map_height: number;
+  pin_title: string;
+  pin_description: string;
+}
 
-type MapSettingsFormValues = z.infer<typeof mapSettingsSchema>;
+const mapStyleOptions = [
+  { value: "mapbox://styles/mapbox/streets-v12", label: "Streets" },
+  { value: "mapbox://styles/mapbox/outdoors-v12", label: "Outdoors" },
+  { value: "mapbox://styles/mapbox/light-v11", label: "Light" },
+  { value: "mapbox://styles/mapbox/dark-v11", label: "Dark" },
+  { value: "mapbox://styles/mapbox/satellite-v9", label: "Satellite" },
+  { value: "mapbox://styles/mapbox/satellite-streets-v12", label: "Satellite Streets" },
+  { value: "mapbox://styles/mapbox/navigation-day-v1", label: "Navigation Day" },
+  { value: "mapbox://styles/mapbox/navigation-night-v1", label: "Navigation Night" },
+];
 
-const DEFAULT_SETTINGS = {
-  mapboxToken: 'pk.placeholder', // This will be replaced with real token
-  latitude: '19.0760',
-  longitude: '72.8777',
+const defaultSettings: MapSettings = {
+  mapbox_token: "",
+  latitude: "19.0760",
+  longitude: "72.8777",
   zoom: 12,
-  mapStyle: 'mapbox://styles/mapbox/streets-v12',
-  showMapOnHomepage: true,
-  showMapInFooter: true,
-  mapHeight: 400,
-  pinTitle: 'Shree Bhagwati Caterers',
-  pinDescription: 'Premium Vegetarian Catering Services',
+  map_style: "mapbox://styles/mapbox/streets-v12",
+  show_map_on_homepage: true,
+  show_map_in_footer: false,
+  map_height: 400,
+  pin_title: "Shree Bhagwati Caterers",
+  pin_description: "Premium Vegetarian Catering Services"
 };
 
 const MapSettings = () => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<MapSettings>(defaultSettings);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
   const { toast } = useToast();
 
-  // Initialize form
-  const form = useForm<MapSettingsFormValues>({
-    resolver: zodResolver(mapSettingsSchema),
-    defaultValues: DEFAULT_SETTINGS,
-  });
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('site_config')
+          .select('value')
+          .eq('key', 'map_settings')
+          .single();
 
-  // Fetch map settings
-  const fetchMapSettings = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('site_config')
-        .select('*')
-        .eq('key', 'map_settings')
-        .single();
+        if (error) {
+          console.error('Error fetching map settings:', error);
+          return;
+        }
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+        if (data && data.value) {
+          const mapSettings = typeof data.value === 'string' 
+            ? JSON.parse(data.value) as MapSettings
+            : data.value as MapSettings;
+          
+          setSettings({
+            ...defaultSettings, // Ensure all properties exist
+            ...mapSettings
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing map settings:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (data && data.value) {
-        // Map DB values to form
-        const settings = data.value;
-        form.reset({
-          mapboxToken: settings.mapbox_token || DEFAULT_SETTINGS.mapboxToken,
-          latitude: settings.latitude || DEFAULT_SETTINGS.latitude,
-          longitude: settings.longitude || DEFAULT_SETTINGS.longitude,
-          zoom: settings.zoom || DEFAULT_SETTINGS.zoom,
-          mapStyle: settings.map_style || DEFAULT_SETTINGS.mapStyle,
-          showMapOnHomepage: settings.show_map_on_homepage ?? DEFAULT_SETTINGS.showMapOnHomepage,
-          showMapInFooter: settings.show_map_in_footer ?? DEFAULT_SETTINGS.showMapInFooter,
-          mapHeight: settings.map_height || DEFAULT_SETTINGS.mapHeight,
-          pinTitle: settings.pin_title || DEFAULT_SETTINGS.pinTitle,
-          pinDescription: settings.pin_description || DEFAULT_SETTINGS.pinDescription,
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching map settings:', error);
-      toast({
-        title: 'Failed to load map settings',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+    fetchSettings();
+  }, []);
+
+  const handleChange = (field: keyof MapSettings, value: string | number | boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  // Save map settings
-  const onSubmit = async (values: MapSettingsFormValues) => {
-    setSaving(true);
+  const saveSettings = async () => {
     try {
+      setSaving(true);
+      
       const { error } = await supabase
         .from('site_config')
         .upsert({
           key: 'map_settings',
-          value: {
-            mapbox_token: values.mapboxToken,
-            latitude: values.latitude,
-            longitude: values.longitude,
-            zoom: values.zoom,
-            map_style: values.mapStyle,
-            show_map_on_homepage: values.showMapOnHomepage,
-            show_map_in_footer: values.showMapInFooter,
-            map_height: values.mapHeight,
-            pin_title: values.pinTitle,
-            pin_description: values.pinDescription,
-            updated_at: new Date().toISOString(),
-          },
-          updated_at: new Date().toISOString(),
+          value: settings,
+          updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
 
       if (error) throw error;
-
-      toast({
-        title: 'Map settings saved',
-        description: 'Your map settings have been updated successfully',
-      });
       
-      sonnerToast.success('Map settings saved successfully!');
-    } catch (error: any) {
+      toast({
+        title: "Settings Saved",
+        description: "Map settings have been updated successfully."
+      });
+    } catch (error) {
       console.error('Error saving map settings:', error);
       toast({
-        title: 'Failed to save settings',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error Saving Settings",
+        description: "There was a problem saving your map settings.",
+        variant: "destructive"
       });
-      sonnerToast.error('Failed to save map settings');
     } finally {
       setSaving(false);
     }
   };
 
-  // Initial fetch
-  useEffect(() => {
-    fetchMapSettings();
-  }, []);
-
-  const mapStyleOptions = [
-    { label: 'Streets', value: 'mapbox://styles/mapbox/streets-v12' },
-    { label: 'Outdoors', value: 'mapbox://styles/mapbox/outdoors-v12' },
-    { label: 'Light', value: 'mapbox://styles/mapbox/light-v11' },
-    { label: 'Dark', value: 'mapbox://styles/mapbox/dark-v11' },
-    { label: 'Satellite', value: 'mapbox://styles/mapbox/satellite-v9' },
-    { label: 'Satellite Streets', value: 'mapbox://styles/mapbox/satellite-streets-v12' },
-    { label: 'Navigation Day', value: 'mapbox://styles/mapbox/navigation-day-v1' },
-    { label: 'Navigation Night', value: 'mapbox://styles/mapbox/navigation-night-v1' },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-bhagwati-maroon" />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Map Settings</h2>
-        <p className="text-muted-foreground">Configure your website map display and location</p>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-        </div>
-      ) : (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="general">General Settings</TabsTrigger>
-                <TabsTrigger value="appearance">Appearance</TabsTrigger>
-              </TabsList>
-              <TabsContent value="general" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Map Configuration</CardTitle>
-                    <CardDescription>Configure your map API and location settings</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="mapboxToken"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mapbox API Key</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="password" />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your Mapbox API key. Get one at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">mapbox.com</a>
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="latitude"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Latitude</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="longitude"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Longitude</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="pinTitle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pin Title</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>Title to show in the map pin popup</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="pinDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pin Description</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>Description to show in the map pin popup</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Location Map Settings</CardTitle>
+          <CardDescription>
+            Configure how and where the map appears on your site
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mapbox_token">Mapbox Access Token</Label>
+                <Input 
+                  id="mapbox_token" 
+                  value={settings.mapbox_token} 
+                  onChange={(e) => handleChange('mapbox_token', e.target.value)} 
+                  placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIiwiYSI..."
+                />
+                <p className="text-xs text-gray-500">
+                  Get a token at <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">mapbox.com</a>
+                </p>
+              </div>
               
-              <TabsContent value="appearance" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Display Settings</CardTitle>
-                    <CardDescription>Customize how your map appears on your website</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="mapStyle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Map Style</FormLabel>
-                          <FormControl>
-                            <select
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              {...field}
-                            >
-                              {mapStyleOptions.map(option => (
-                                <option key={option.value} value={option.value}>{option.label}</option>
-                              ))}
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="zoom"
-                      render={({ field: { value, onChange, ...field } }) => (
-                        <FormItem>
-                          <FormLabel>Zoom Level: {value}</FormLabel>
-                          <FormControl>
-                            <Slider
-                              min={1}
-                              max={20}
-                              step={1}
-                              defaultValue={[value]}
-                              onValueChange={(vals) => onChange(vals[0])}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>Adjust the zoom level of your map (1-20)</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="mapHeight"
-                      render={({ field: { value, onChange, ...field } }) => (
-                        <FormItem>
-                          <FormLabel>Map Height: {value}px</FormLabel>
-                          <FormControl>
-                            <Slider
-                              min={200}
-                              max={800}
-                              step={10}
-                              defaultValue={[value]}
-                              onValueChange={(vals) => onChange(vals[0])}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>Adjust the height of the map in pixels</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="showMapOnHomepage"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">Show on Homepage</FormLabel>
-                              <FormDescription>
-                                Display map in the contact section of your homepage
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="showMapInFooter"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">Show in Footer</FormLabel>
-                              <FormDescription>
-                                Display a smaller map in your website footer
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-
-            <div className="flex justify-end">
-              <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-                {saving ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <Map className="mr-2 h-4 w-4" />
-                    Save Map Settings
-                  </div>
-                )}
-              </Button>
+              <div className="space-y-2">
+                <Label htmlFor="map_style">Map Style</Label>
+                <Select 
+                  value={settings.map_style}
+                  onValueChange={(value) => handleChange('map_style', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a map style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mapStyleOptions.map((style) => (
+                      <SelectItem key={style.value} value={style.value}>
+                        {style.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </form>
-        </Form>
-      )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input 
+                  id="latitude" 
+                  value={settings.latitude} 
+                  onChange={(e) => handleChange('latitude', e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input 
+                  id="longitude" 
+                  value={settings.longitude} 
+                  onChange={(e) => handleChange('longitude', e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="zoom">Zoom Level</Label>
+                <Input 
+                  id="zoom" 
+                  type="number" 
+                  min="1" 
+                  max="22" 
+                  value={settings.zoom.toString()} 
+                  onChange={(e) => handleChange('zoom', parseInt(e.target.value) || 12)} 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pin_title">Pin Title</Label>
+                <Input 
+                  id="pin_title" 
+                  value={settings.pin_title} 
+                  onChange={(e) => handleChange('pin_title', e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="map_height">Map Height (pixels)</Label>
+                <Input 
+                  id="map_height" 
+                  type="number"
+                  min="200"
+                  max="800"
+                  value={settings.map_height.toString()} 
+                  onChange={(e) => handleChange('map_height', parseInt(e.target.value) || 400)} 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pin_description">Pin Description</Label>
+              <Input 
+                id="pin_description" 
+                value={settings.pin_description} 
+                onChange={(e) => handleChange('pin_description', e.target.value)} 
+              />
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="show_map_on_homepage" className="text-base">Show Map on Homepage</Label>
+                  <p className="text-sm text-gray-500">Display location map on the homepage</p>
+                </div>
+                <Switch 
+                  id="show_map_on_homepage" 
+                  checked={settings.show_map_on_homepage}
+                  onCheckedChange={(checked) => handleChange('show_map_on_homepage', checked)} 
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="show_map_in_footer" className="text-base">Show Map in Footer</Label>
+                  <p className="text-sm text-gray-500">Display a smaller map in the page footer</p>
+                </div>
+                <Switch 
+                  id="show_map_in_footer" 
+                  checked={settings.show_map_in_footer}
+                  onCheckedChange={(checked) => handleChange('show_map_in_footer', checked)} 
+                />
+              </div>
+            </div>
+          </div>
+          
+          <Button 
+            className="mt-6 bg-bhagwati-maroon hover:bg-red-900"
+            onClick={saveSettings}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Map Settings'
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

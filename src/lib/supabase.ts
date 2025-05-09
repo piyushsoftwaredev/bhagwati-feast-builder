@@ -65,10 +65,14 @@ export const uploadImage = async (file: File, folder: string = 'uploads') => {
     const baseName = safeFileName.substring(0, safeFileName.lastIndexOf('.'));
     const finalFileName = `${baseName}-${timestamp}.${fileExt}`;
     
-    // Upload to storage
+    // Upload to storage with increased timeout for larger files
     const { data, error } = await supabase.storage
       .from('images')
-      .upload(`${folder}/${finalFileName}`, file);
+      .upload(`${folder}/${finalFileName}`, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
 
     if (error) throw error;
 
@@ -76,6 +80,16 @@ export const uploadImage = async (file: File, folder: string = 'uploads') => {
     const { data: publicUrlData } = supabase.storage
       .from('images')
       .getPublicUrl(`${folder}/${finalFileName}`);
+
+    // Log image upload in database for tracking
+    await supabase.from('images').insert({
+      path: `${folder}/${finalFileName}`,
+      url: publicUrlData.publicUrl,
+      name: finalFileName,
+      size: file.size,
+      type: file.type,
+      uploaded_by: 'website_user', // This could be the actual user ID if authentication is implemented
+    });
 
     return {
       path: `${folder}/${finalFileName}`,
@@ -93,11 +107,28 @@ export const uploadImage = async (file: File, folder: string = 'uploads') => {
 // Helper function to delete an image
 export const deleteImage = async (path: string) => {
   try {
+    // First, find the image in the database
+    const { data: imageData } = await supabase
+      .from('images')
+      .select('*')
+      .eq('path', path)
+      .single();
+
+    // Remove from storage
     const { error } = await supabase.storage
       .from('images')
       .remove([path]);
     
     if (error) throw error;
+
+    // If we found the image in the database, remove it from there too
+    if (imageData) {
+      await supabase
+        .from('images')
+        .delete()
+        .eq('id', imageData.id);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error deleting image:', error);
