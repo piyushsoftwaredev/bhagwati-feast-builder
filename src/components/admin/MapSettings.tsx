@@ -5,12 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-// Define the map settings interface
 interface MapSettings {
   mapbox_token: string;
   latitude: string;
@@ -24,43 +21,31 @@ interface MapSettings {
   pin_description: string;
 }
 
-const mapStyleOptions = [
-  { value: "mapbox://styles/mapbox/streets-v12", label: "Streets" },
-  { value: "mapbox://styles/mapbox/outdoors-v12", label: "Outdoors" },
-  { value: "mapbox://styles/mapbox/light-v11", label: "Light" },
-  { value: "mapbox://styles/mapbox/dark-v11", label: "Dark" },
-  { value: "mapbox://styles/mapbox/satellite-v9", label: "Satellite" },
-  { value: "mapbox://styles/mapbox/satellite-streets-v12", label: "Satellite Streets" },
-  { value: "mapbox://styles/mapbox/navigation-day-v1", label: "Navigation Day" },
-  { value: "mapbox://styles/mapbox/navigation-night-v1", label: "Navigation Night" },
-];
-
-const defaultSettings: MapSettings = {
-  mapbox_token: "",
-  latitude: "19.0760",
-  longitude: "72.8777",
+const defaultMapSettings: MapSettings = {
+  mapbox_token: 'pk.eyJ1IjoibG92YWJsZWRldiIsImEiOiJjbDBkbTk5YWYwOHZsM2NxcWs1OG9ka2tuIn0.0wNxwnNjJPWZMkCGc8gpXw',
+  latitude: '19.0760',
+  longitude: '72.8777',
   zoom: 12,
-  map_style: "mapbox://styles/mapbox/streets-v12",
+  map_style: 'mapbox://styles/mapbox/streets-v12',
   show_map_on_homepage: true,
   show_map_in_footer: false,
   map_height: 400,
-  pin_title: "Shree Bhagwati Caterers",
-  pin_description: "Premium Vegetarian Catering Services"
+  pin_title: 'Shree Bhagwati Caterers',
+  pin_description: 'Premium Vegetarian Catering Services',
 };
 
 const MapSettings = () => {
-  const [settings, setSettings] = useState<MapSettings>(defaultSettings);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [settings, setSettings] = useState<MapSettings>(defaultMapSettings);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        setLoading(true);
         const { data, error } = await supabase
           .from('site_config')
-          .select('value')
+          .select('*')
           .eq('key', 'map_settings')
           .single();
 
@@ -70,12 +55,13 @@ const MapSettings = () => {
         }
 
         if (data && data.value) {
+          // Convert the JSON value to an object
           const mapSettings = typeof data.value === 'string' 
-            ? JSON.parse(data.value) as MapSettings
-            : data.value as MapSettings;
-          
+            ? JSON.parse(data.value)
+            : data.value;
+            
           setSettings({
-            ...defaultSettings, // Ensure all properties exist
+            ...defaultMapSettings,
             ...mapSettings
           });
         }
@@ -96,7 +82,7 @@ const MapSettings = () => {
     }));
   };
 
-  const saveSettings = async () => {
+  const handleSave = async () => {
     try {
       setSaving(true);
       
@@ -106,20 +92,22 @@ const MapSettings = () => {
           key: 'map_settings',
           value: settings,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'key' });
+        }, {
+          onConflict: 'key'
+        });
 
       if (error) throw error;
-      
+
       toast({
-        title: "Settings Saved",
-        description: "Map settings have been updated successfully."
+        title: 'Settings Saved',
+        description: 'Map settings have been updated successfully.',
       });
     } catch (error) {
       console.error('Error saving map settings:', error);
       toast({
-        title: "Error Saving Settings",
-        description: "There was a problem saving your map settings.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Could not save map settings.',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -128,165 +116,155 @@ const MapSettings = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-bhagwati-maroon" />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Map Settings</CardTitle>
+          <CardDescription>Loading settings...</CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Location Map Settings</CardTitle>
-          <CardDescription>
-            Configure how and where the map appears on your site
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <Card>
+      <CardHeader>
+        <CardTitle>Map Settings</CardTitle>
+        <CardDescription>
+          Configure your location map settings
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="mapbox_token">Mapbox Access Token</Label>
-                <Input 
-                  id="mapbox_token" 
-                  value={settings.mapbox_token} 
-                  onChange={(e) => handleChange('mapbox_token', e.target.value)} 
-                  placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIiwiYSI..."
-                />
-                <p className="text-xs text-gray-500">
-                  Get a token at <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">mapbox.com</a>
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="map_style">Map Style</Label>
-                <Select 
-                  value={settings.map_style}
-                  onValueChange={(value) => handleChange('map_style', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a map style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mapStyleOptions.map((style) => (
-                      <SelectItem key={style.value} value={style.value}>
-                        {style.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="mapbox_token">Mapbox Token</Label>
+              <Input
+                id="mapbox_token"
+                type="text"
+                value={settings.mapbox_token}
+                onChange={(e) => handleChange('mapbox_token', e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Get a token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Mapbox</a>
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="latitude">Latitude</Label>
-                <Input 
-                  id="latitude" 
-                  value={settings.latitude} 
-                  onChange={(e) => handleChange('latitude', e.target.value)} 
+                <Input
+                  id="latitude"
+                  type="text"
+                  value={settings.latitude}
+                  onChange={(e) => handleChange('latitude', e.target.value)}
                 />
               </div>
-              
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="longitude">Longitude</Label>
-                <Input 
-                  id="longitude" 
-                  value={settings.longitude} 
-                  onChange={(e) => handleChange('longitude', e.target.value)} 
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="zoom">Zoom Level</Label>
-                <Input 
-                  id="zoom" 
-                  type="number" 
-                  min="1" 
-                  max="22" 
-                  value={settings.zoom.toString()} 
-                  onChange={(e) => handleChange('zoom', parseInt(e.target.value) || 12)} 
+                <Input
+                  id="longitude"
+                  type="text"
+                  value={settings.longitude}
+                  onChange={(e) => handleChange('longitude', e.target.value)}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="pin_title">Pin Title</Label>
-                <Input 
-                  id="pin_title" 
-                  value={settings.pin_title} 
-                  onChange={(e) => handleChange('pin_title', e.target.value)} 
+              <div>
+                <Label htmlFor="zoom">Zoom Level</Label>
+                <Input
+                  id="zoom"
+                  type="number"
+                  min="1"
+                  max="22"
+                  value={settings.zoom}
+                  onChange={(e) => handleChange('zoom', parseInt(e.target.value))}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="map_height">Map Height (pixels)</Label>
-                <Input 
-                  id="map_height" 
+              <div>
+                <Label htmlFor="map_height">Map Height (px)</Label>
+                <Input
+                  id="map_height"
                   type="number"
                   min="200"
                   max="800"
-                  value={settings.map_height.toString()} 
-                  onChange={(e) => handleChange('map_height', parseInt(e.target.value) || 400)} 
+                  value={settings.map_height}
+                  onChange={(e) => handleChange('map_height', parseInt(e.target.value))}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pin_description">Pin Description</Label>
-              <Input 
-                id="pin_description" 
-                value={settings.pin_description} 
-                onChange={(e) => handleChange('pin_description', e.target.value)} 
+            <div>
+              <Label htmlFor="map_style">Map Style</Label>
+              <Input
+                id="map_style"
+                type="text"
+                value={settings.map_style}
+                onChange={(e) => handleChange('map_style', e.target.value)}
               />
+              <p className="text-sm text-gray-500 mt-1">
+                Example: mapbox://styles/mapbox/streets-v12
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="pin_title">Pin Title</Label>
+                <Input
+                  id="pin_title"
+                  type="text"
+                  value={settings.pin_title}
+                  onChange={(e) => handleChange('pin_title', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="pin_description">Pin Description</Label>
+                <Input
+                  id="pin_description"
+                  type="text"
+                  value={settings.pin_description}
+                  onChange={(e) => handleChange('pin_description', e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-4 pt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <Label htmlFor="show_map_on_homepage" className="text-base">Show Map on Homepage</Label>
-                  <p className="text-sm text-gray-500">Display location map on the homepage</p>
+                  <h3 className="text-sm font-medium">Show on Homepage</h3>
+                  <p className="text-sm text-gray-500">
+                    Display the map on your homepage
+                  </p>
                 </div>
-                <Switch 
-                  id="show_map_on_homepage" 
+                <Switch
                   checked={settings.show_map_on_homepage}
-                  onCheckedChange={(checked) => handleChange('show_map_on_homepage', checked)} 
+                  onCheckedChange={(checked) => handleChange('show_map_on_homepage', checked)}
                 />
               </div>
-              
-              <div className="flex items-center justify-between">
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <Label htmlFor="show_map_in_footer" className="text-base">Show Map in Footer</Label>
-                  <p className="text-sm text-gray-500">Display a smaller map in the page footer</p>
+                  <h3 className="text-sm font-medium">Show in Footer</h3>
+                  <p className="text-sm text-gray-500">
+                    Display the map in your website footer
+                  </p>
                 </div>
-                <Switch 
-                  id="show_map_in_footer" 
+                <Switch
                   checked={settings.show_map_in_footer}
-                  onCheckedChange={(checked) => handleChange('show_map_in_footer', checked)} 
+                  onCheckedChange={(checked) => handleChange('show_map_in_footer', checked)}
                 />
               </div>
             </div>
           </div>
-          
-          <Button 
-            className="mt-6 bg-bhagwati-maroon hover:bg-red-900"
-            onClick={saveSettings}
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Map Settings'
-            )}
+
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-        </CardContent>
-      </Card>
-    </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

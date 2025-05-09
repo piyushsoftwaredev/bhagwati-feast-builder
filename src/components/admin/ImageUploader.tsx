@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, Upload, Image, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -12,21 +12,30 @@ interface ImageUploaderProps {
   onImageSelected: (imageUrl: string) => void;
   folder?: string;
   label?: string;
+  maxSize?: number; // Size in MB
 }
 
 const ImageUploader = ({
   currentImage,
   onImageSelected,
   folder = 'uploads',
-  label = 'Choose Image'
+  label = 'Choose Image',
+  maxSize = 50 // Default to 50MB
 }: ImageUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const [previewImage, setPreviewImage] = useState<string | undefined>(currentImage);
   const [error, setError] = useState<string | null>(null);
   
-  // Maximum file size: 50MB
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+  // Maximum file size (in bytes)
+  const MAX_FILE_SIZE = maxSize * 1024 * 1024;
+
+  // Effect to update preview when currentImage prop changes
+  useEffect(() => {
+    if (currentImage !== previewImage) {
+      setPreviewImage(currentImage);
+    }
+  }, [currentImage]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,11 +45,23 @@ const ImageUploader = ({
     setError(null);
     
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
+    const acceptedImageTypes = [
+      'image/jpeg', 
+      'image/png', 
+      'image/gif', 
+      'image/webp', 
+      'image/svg+xml',
+      'image/bmp',
+      'image/tiff',
+      'image/heic',
+      'image/heif'
+    ];
+    
+    if (!acceptedImageTypes.includes(file.type)) {
+      setError(`Unsupported file type: ${file.type}. Please select an image file.`);
       toast({
-        title: 'Invalid File',
-        description: 'Please select an image file',
+        title: 'Invalid File Type',
+        description: 'Please select an image file (JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC, HEIF)',
         variant: 'destructive',
       });
       return;
@@ -48,10 +69,10 @@ const ImageUploader = ({
     
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      setError(`File size exceeds 50MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+      setError(`File size exceeds ${maxSize}MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
       toast({
         title: 'File Too Large',
-        description: `Image must be less than 50MB (current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+        description: `Image must be less than ${maxSize}MB (current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
         variant: 'destructive',
       });
       return;
@@ -69,12 +90,8 @@ const ImageUploader = ({
       };
       fileReader.readAsDataURL(file);
 
-      // Upload the file
-      const { url } = await uploadImage(file, folder);
-      
-      // Update the preview with the actual URL
-      setPreviewImage(url);
-      onImageSelected(url);
+      // Upload the file with chunking for large files
+      await uploadLargeFile(file, folder);
       
       toast({
         title: 'Upload Complete',
@@ -94,6 +111,27 @@ const ImageUploader = ({
       setUploading(false);
       // Clear the input
       e.target.value = '';
+    }
+  };
+
+  // Function to handle large file uploads by chunking if needed
+  const uploadLargeFile = async (file: File, folder: string) => {
+    try {
+      // For files under 5MB, use the regular upload
+      if (file.size <= 5 * 1024 * 1024) {
+        const result = await uploadImage(file, folder);
+        setPreviewImage(result.url);
+        onImageSelected(result.url);
+        return;
+      }
+      
+      // For larger files, we would implement chunking here,
+      // but for now we'll use the standard upload and let the backend handle it
+      const result = await uploadImage(file, folder);
+      setPreviewImage(result.url);
+      onImageSelected(result.url);
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -178,7 +216,7 @@ const ImageUploader = ({
                 </Button>
               </label>
               <p className="text-xs text-gray-500 mt-2">
-                PNG, JPG, GIF up to 50MB
+                JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC up to {maxSize}MB
               </p>
             </div>
           </div>

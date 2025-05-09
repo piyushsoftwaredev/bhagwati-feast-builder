@@ -72,39 +72,61 @@ export const initializeDatabase = async (userId?: string, userEmail?: string) =>
     
     // Create posts table with MySQL-compatible syntax
     await createTable('posts', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       title TEXT NOT NULL,
       content TEXT,
       featured_image TEXT,
       published BOOLEAN DEFAULT false,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       author_id VARCHAR(36)
     `);
     
+    // Create pages table with MySQL-compatible syntax
+    await createTable('pages', `
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      title TEXT NOT NULL,
+      content TEXT,
+      slug TEXT NOT NULL,
+      published BOOLEAN DEFAULT false,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    `);
+    
+    // Add a flag to indicate pages table has been created
+    try {
+      await supabase.from('site_config').upsert({
+        key: 'pages_table_created',
+        value: true
+      }, { onConflict: 'key' });
+    } catch (error) {
+      console.error('Error setting pages_table_created flag:', error);
+    }
+    
     // Create site_config table with MySQL-compatible syntax
     await createTable('site_config', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       key TEXT NOT NULL,
-      value JSON,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      value JSONB,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(key)
     `);
     
     // Create contact_messages table with MySQL-compatible syntax
     await createTable('contact_messages', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       phone TEXT,
       message TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      status TEXT DEFAULT 'new',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     `);
     
     // Create booking_requests table with MySQL-compatible syntax
     await createTable('booking_requests', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       phone TEXT,
@@ -112,19 +134,19 @@ export const initializeDatabase = async (userId?: string, userEmail?: string) =>
       date DATE NOT NULL,
       guest_count INTEGER NOT NULL,
       message TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     `);
     
     // Create images table for tracking uploaded images with MySQL-compatible syntax
     await createTable('images', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       path TEXT NOT NULL,
       url TEXT NOT NULL,
       name TEXT NOT NULL,
       size INTEGER,
       type TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      uploaded_by VARCHAR(36)
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      uploaded_by TEXT
     `);
     
     // Create profiles table and add admin user if needed with MySQL-compatible syntax
@@ -132,21 +154,21 @@ export const initializeDatabase = async (userId?: string, userEmail?: string) =>
       id VARCHAR(36) PRIMARY KEY,
       email TEXT,
       role TEXT DEFAULT 'user',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     `);
     
     // Create theme_settings table for custom themes with MySQL-compatible syntax
     await createTable('theme_settings', `
-      id VARCHAR(36) PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       primary_color TEXT DEFAULT '#8B0000',
       secondary_color TEXT DEFAULT '#FFD700',
       font_family TEXT DEFAULT 'Inter, sans-serif',
       header_style TEXT DEFAULT 'standard',
       footer_style TEXT DEFAULT 'standard',
       custom_css TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     `);
     
     // Create admin profile if userId is provided
@@ -214,7 +236,17 @@ export const ensureStorageBuckets = async () => {
         const { error: createError } = await supabase.storage.createBucket('images', {
           public: true,
           fileSizeLimit: 52428800, // 50MB (in bytes)
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
+          allowedMimeTypes: [
+            'image/png', 
+            'image/jpeg', 
+            'image/gif', 
+            'image/webp', 
+            'image/svg+xml',
+            'image/bmp',
+            'image/tiff',
+            'image/heic',
+            'image/heif'
+          ]
         });
         
         if (createError) {

@@ -24,6 +24,16 @@ export type Post = {
   updated_at: string;
 };
 
+export type Page = {
+  id: string;
+  title: string;
+  content: string;
+  slug: string;
+  published?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // Demo data for offline/fallback usage
 export const demoData = {
   posts: [
@@ -46,10 +56,30 @@ export const demoData = {
       created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
       updated_at: new Date(Date.now() - 86400000).toISOString(),
     }
+  ],
+  pages: [
+    {
+      id: 'demo-1',
+      title: 'About Us',
+      content: 'This is the about us page content.',
+      slug: 'about-us',
+      published: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: 'demo-2',
+      title: 'Contact Us',
+      content: 'This is the contact us page content.',
+      slug: 'contact-us',
+      published: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
   ]
 };
 
-// Helper function to upload an image
+// Helper function to upload an image with support for larger files
 export const uploadImage = async (file: File, folder: string = 'uploads') => {
   try {
     // Create a safe filename (replace spaces, remove special chars)
@@ -64,6 +94,11 @@ export const uploadImage = async (file: File, folder: string = 'uploads') => {
     const fileExt = safeFileName.split('.').pop();
     const baseName = safeFileName.substring(0, safeFileName.lastIndexOf('.'));
     const finalFileName = `${baseName}-${timestamp}.${fileExt}`;
+    
+    // Check file size
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error('File size exceeds 50MB limit');
+    }
     
     // Upload to storage with increased timeout for larger files
     const { data, error } = await supabase.storage
