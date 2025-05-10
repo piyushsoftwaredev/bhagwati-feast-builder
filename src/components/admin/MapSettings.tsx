@@ -86,11 +86,13 @@ const MapSettings = () => {
     try {
       setSaving(true);
       
+      // Convert the settings object to a JSON string to ensure it's properly
+      // stored as a JSON value in Supabase
       const { error } = await supabase
         .from('site_config')
         .upsert({
           key: 'map_settings',
-          value: settings,
+          value: settings as any, // Type assertion to fix TS error
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'key'

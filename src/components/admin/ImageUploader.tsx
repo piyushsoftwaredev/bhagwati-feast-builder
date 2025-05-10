@@ -91,7 +91,11 @@ const ImageUploader = ({
       fileReader.readAsDataURL(file);
 
       // Upload the file with chunking for large files
-      await uploadLargeFile(file, folder);
+      const result = await uploadImage(file, folder);
+      
+      // Update preview with the actual URL and notify parent
+      setPreviewImage(result.url);
+      onImageSelected(result.url);
       
       toast({
         title: 'Upload Complete',
@@ -111,27 +115,6 @@ const ImageUploader = ({
       setUploading(false);
       // Clear the input
       e.target.value = '';
-    }
-  };
-
-  // Function to handle large file uploads by chunking if needed
-  const uploadLargeFile = async (file: File, folder: string) => {
-    try {
-      // For files under 5MB, use the regular upload
-      if (file.size <= 5 * 1024 * 1024) {
-        const result = await uploadImage(file, folder);
-        setPreviewImage(result.url);
-        onImageSelected(result.url);
-        return;
-      }
-      
-      // For larger files, we would implement chunking here,
-      // but for now we'll use the standard upload and let the backend handle it
-      const result = await uploadImage(file, folder);
-      setPreviewImage(result.url);
-      onImageSelected(result.url);
-    } catch (error) {
-      throw error;
     }
   };
 

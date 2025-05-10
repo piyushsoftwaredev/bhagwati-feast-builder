@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -13,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Page } from '@/lib/supabase';
 
 // Define the PageData interface
 interface PageData {
@@ -33,9 +33,9 @@ const formSchema = z.object({
 });
 
 const PageEditor = () => {
-  const [pages, setPages] = useState<PageData[]>([]);
+  const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPage, setSelectedPage] = useState<PageData | null>(null);
+  const [selectedPage, setSelectedPage] = useState<Page | null>(null);
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -68,17 +68,20 @@ const PageEditor = () => {
         return;
       }
       
+      // Using 'pages' table which now exists after our SQL migration
       const { data, error } = await supabase
         .from('pages')
         .select('*')
         .order('created_at', { ascending: false });
         
       if (error) {
+        console.error("Error fetching pages:", error);
         throw error;
       }
       
       if (data) {
-        setPages(data as PageData[]);
+        // Explicitly cast the data to Page[] since we know the structure matches
+        setPages(data as unknown as Page[]);
       }
     } catch (error) {
       console.error('Error fetching pages:', error);
@@ -113,7 +116,7 @@ const PageEditor = () => {
     });
   };
   
-  const handleEditPage = (page: PageData) => {
+  const handleEditPage = (page: Page) => {
     setSelectedPage(page);
     setIsCreatingPage(false);
     form.reset({
