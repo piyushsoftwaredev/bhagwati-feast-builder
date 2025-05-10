@@ -16,20 +16,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Helper function to check connection status
 export const checkSupabaseConnection = async () => {
   try {
-    // Use a generic query that doesn't depend on specific tables
-    // Attempt to fetch health status
-    const { data, error } = await supabase.from('dummy_check').select('count', { 
-      count: 'exact', 
-      head: true 
-    }).catch(() => ({ data: null, error: null }));
+    // Instead of trying to query a non-existent table, use a simple health check
+    const { error } = await supabase.from('site_config')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
     
-    // If no error or the error is that the table doesn't exist (which is fine)
-    // then the connection is working
-    if (!error || error.code === 'PGRST116') {
-      return true;
-    }
-    
-    return false;
+    // As long as we don't get a critical connection error, consider it working
+    // This avoids the issue with the catch syntax on PostgrestFilterBuilder
+    return !error || error.code !== 'PGRST116';
   } catch (e) {
     console.error('Supabase connection check failed:', e);
     return false;

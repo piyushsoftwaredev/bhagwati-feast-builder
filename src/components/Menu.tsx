@@ -220,9 +220,11 @@ const Menu = () => {
         )}
 
         <div className="mt-12 text-center">
-          <Button className="bg-bhagwati-maroon hover:bg-bhagwati-maroon/90 text-white px-8 py-6">
-            View Full Menu <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
+          <Link to="/menu">
+            <Button className="bg-bhagwati-maroon hover:bg-bhagwati-maroon/90 text-white px-8 py-6">
+              View Full Menu <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase, ThemeSettings, saveThemeSettings, getThemeSettings } from '@/lib/supabase';
+import { supabase, saveThemeSettings, getThemeSettings } from '@/lib/supabase';
+import type { ThemeSettings as ThemeSettingsType } from '@/lib/supabase';
 import { parseThemeSettings } from '@/lib/theme-utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -77,7 +78,18 @@ const ThemeSettings = () => {
   const onSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
-      const success = await saveThemeSettings(data);
+      
+      // Ensure all required fields have values to match ThemeSettingsType
+      const themeData: ThemeSettingsType = {
+        primary_color: data.primary_color,
+        secondary_color: data.secondary_color,
+        font_family: data.font_family,
+        header_style: data.header_style || 'standard',
+        footer_style: data.footer_style || 'standard',
+        custom_css: data.custom_css || ''
+      };
+      
+      const success = await saveThemeSettings(themeData);
       
       if (success) {
         toast({
