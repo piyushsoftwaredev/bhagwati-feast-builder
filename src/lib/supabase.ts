@@ -34,6 +34,19 @@ export type Page = {
   updated_at?: string;
 };
 
+// Define theme settings type
+export type ThemeSettings = {
+  id?: string;
+  primary_color: string;
+  secondary_color: string;
+  font_family: string;
+  header_style: string;
+  footer_style: string;
+  custom_css?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // Demo data for offline/fallback usage
 export const demoData = {
   posts: [
@@ -167,6 +180,101 @@ export const deleteImage = async (path: string) => {
     return true;
   } catch (error) {
     console.error('Error deleting image:', error);
+    return false;
+  }
+};
+
+// Fetch theme settings from the database
+export const getThemeSettings = async (): Promise<ThemeSettings> => {
+  try {
+    // Try to get from theme_settings table
+    const { data, error } = await supabase
+      .from('theme_settings')
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      // Fallback to default settings
+      return {
+        primary_color: '#8B0000',
+        secondary_color: '#FFD700',
+        font_family: 'Inter, sans-serif',
+        header_style: 'standard',
+        footer_style: 'standard',
+        custom_css: ''
+      };
+    }
+
+    return data as ThemeSettings;
+  } catch (error) {
+    console.error('Error fetching theme settings:', error);
+    // Return default theme settings on error
+    return {
+      primary_color: '#8B0000',
+      secondary_color: '#FFD700',
+      font_family: 'Inter, sans-serif',
+      header_style: 'standard',
+      footer_style: 'standard',
+      custom_css: ''
+    };
+  }
+};
+
+// Save theme settings to the database
+export const saveThemeSettings = async (settings: ThemeSettings): Promise<boolean> => {
+  try {
+    // Check if any settings exist
+    const { data, error: fetchError } = await supabase
+      .from('theme_settings')
+      .select('id')
+      .limit(1);
+    
+    if (fetchError) {
+      console.error('Error fetching existing theme settings:', fetchError);
+      return false;
+    }
+    
+    if (data && data.length > 0) {
+      // Update existing settings
+      const { error } = await supabase
+        .from('theme_settings')
+        .update({
+          primary_color: settings.primary_color,
+          secondary_color: settings.secondary_color,
+          font_family: settings.font_family,
+          header_style: settings.header_style,
+          footer_style: settings.footer_style,
+          custom_css: settings.custom_css,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data[0].id);
+      
+      if (error) {
+        console.error('Error updating theme settings:', error);
+        return false;
+      }
+    } else {
+      // Insert new settings
+      const { error } = await supabase
+        .from('theme_settings')
+        .insert({
+          primary_color: settings.primary_color,
+          secondary_color: settings.secondary_color,
+          font_family: settings.font_family,
+          header_style: settings.header_style,
+          footer_style: settings.footer_style,
+          custom_css: settings.custom_css
+        });
+      
+      if (error) {
+        console.error('Error inserting theme settings:', error);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving theme settings:', error);
     return false;
   }
 };

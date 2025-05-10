@@ -168,7 +168,8 @@ const ImageUploader = ({
               alt="Preview" 
               className="max-h-80 rounded-md mx-auto object-contain"
             />
-            {isLoggedIn && ( // Only show image controls for logged-in users
+            {/* Only show image controls for logged-in users */}
+            {isLoggedIn && (
               <div className="flex justify-center mt-4 gap-2">
                 <Button 
                   type="button" 
@@ -194,7 +195,7 @@ const ImageUploader = ({
           <div className="text-center py-6">
             <Image className="mx-auto h-12 w-12 text-gray-400" />
             <div className="mt-4 flex flex-col items-center">
-              {isLoggedIn ? ( // Only show upload button for logged-in users
+              {isLoggedIn ? (
                 <label htmlFor="file-input" className="cursor-pointer">
                   <Button
                     type="button"
@@ -205,8 +206,10 @@ const ImageUploader = ({
                     {uploading ? 'Uploading...' : label}
                   </Button>
                 </label>
+              ) : previewImage ? (
+                <p className="text-sm text-gray-500">Login required to modify images</p>
               ) : (
-                <p className="text-sm text-gray-500">You need to be logged in to upload images</p>
+                <p className="text-sm text-gray-500">Login required to upload images</p>
               )}
               <p className="text-xs text-gray-500 mt-2">
                 JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC up to {maxSize}MB
@@ -216,16 +219,15 @@ const ImageUploader = ({
         )}
       </div>
 
-      {isLoggedIn && (
-        <input
-          id="file-input"
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-          accept="image/*"
-          disabled={uploading}
-        />
-      )}
+      {/* Always include the file input but disable it for non-logged-in users */}
+      <input
+        id="file-input"
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        accept="image/*"
+        disabled={uploading || !isLoggedIn}
+      />
     </div>
   );
 };

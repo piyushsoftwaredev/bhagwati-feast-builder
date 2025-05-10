@@ -6,6 +6,7 @@ import Gallery from "@/components/Gallery";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import Menu from "@/components/Menu";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 
@@ -25,6 +26,7 @@ const Index = () => {
       <Navbar />
       <Hero />
       <Services />
+      <Menu />
       <Gallery />
       <About />
       <Contact />
