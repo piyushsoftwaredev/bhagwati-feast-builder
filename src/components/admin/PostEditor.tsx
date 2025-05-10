@@ -96,14 +96,15 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
           description: 'The post has been updated successfully',
         });
       } else {
-        // Create new post
+        // Create new post - ensure title is included
         const { error } = await supabase
           .from('posts')
-          .insert([{
+          .insert({
             ...postData,
+            title: values.title, // Explicitly include title
             author_id: session?.user?.id || 'demo-user',
             created_at: new Date().toISOString(),
-          }]);
+          });
 
         if (error) throw error;
         

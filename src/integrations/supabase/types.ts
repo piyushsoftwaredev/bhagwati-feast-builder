@@ -269,6 +269,42 @@ export type Database = {
         }
         Relationships: []
       }
+      theme_settings: {
+        Row: {
+          created_at: string | null
+          custom_css: string | null
+          font_family: string | null
+          footer_style: string | null
+          header_style: string | null
+          id: string
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_css?: string | null
+          font_family?: string | null
+          footer_style?: string | null
+          header_style?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_css?: string | null
+          font_family?: string | null
+          footer_style?: string | null
+          header_style?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

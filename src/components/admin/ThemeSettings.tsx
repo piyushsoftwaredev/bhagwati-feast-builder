@@ -45,6 +45,16 @@ const themeSettingsSchema = z.object({
 
 type ThemeSettingsValues = z.infer<typeof themeSettingsSchema>;
 
+// Define a type for theme settings in the site_config table
+interface ThemeSettingsConfig {
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+  headerStyle: string;
+  footerStyle: string;
+  customCss?: string;
+}
+
 const ThemeSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,25 +78,28 @@ const ThemeSettings = () => {
   const fetchThemeSettings = async () => {
     setLoading(true);
     try {
+      // Get theme settings from site_config table instead of theme_settings table
       const { data, error } = await supabase
-        .from('theme_settings')
+        .from('site_config')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('key', 'theme_settings')
         .single();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      if (data) {
+      if (data && data.value) {
+        // Parse the JSON value from site_config
+        const themeSettings = data.value as ThemeSettingsConfig;
+        
         form.reset({
-          primaryColor: data.primary_color || '#8B0000',
-          secondaryColor: data.secondary_color || '#FFD700',
-          fontFamily: data.font_family || 'Inter, sans-serif',
-          headerStyle: data.header_style || 'standard',
-          footerStyle: data.footer_style || 'standard',
-          customCss: data.custom_css || '',
+          primaryColor: themeSettings.primaryColor || '#8B0000',
+          secondaryColor: themeSettings.secondaryColor || '#FFD700',
+          fontFamily: themeSettings.fontFamily || 'Inter, sans-serif',
+          headerStyle: themeSettings.headerStyle || 'standard',
+          footerStyle: themeSettings.footerStyle || 'standard',
+          customCss: themeSettings.customCss || '',
         });
       }
     } catch (error: any) {
@@ -128,22 +141,33 @@ const ThemeSettings = () => {
   const onSubmit = async (values: ThemeSettingsValues) => {
     setSaving(true);
     try {
+      // Store theme settings in site_config instead of theme_settings
+      const themeSettingsData = {
+        primaryColor: values.primaryColor,
+        secondaryColor: values.secondaryColor,
+        fontFamily: values.fontFamily,
+        headerStyle: values.headerStyle,
+        footerStyle: values.footerStyle,
+        customCss: values.customCss,
+      };
+
       const { error } = await supabase
-        .from('theme_settings')
+        .from('site_config')
         .upsert({
-          primary_color: values.primaryColor,
-          secondary_color: values.secondaryColor,
-          font_family: values.fontFamily,
-          header_style: values.headerStyle,
-          footer_style: values.footerStyle,
-          custom_css: values.customCss,
+          key: 'theme_settings',
+          value: themeSettingsData,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
         });
 
       if (error) throw error;
 
       // Apply the theme
       applyTheme(values);
+
+      // Also save to localStorage for persistence on page reload
+      localStorage.setItem('theme-settings', JSON.stringify(themeSettingsData));
 
       toast({
         title: 'Theme settings saved',

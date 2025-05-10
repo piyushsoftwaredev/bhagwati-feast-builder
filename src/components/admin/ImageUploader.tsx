@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/lib/supabase';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ImageUploaderProps {
   currentImage?: string;
@@ -26,6 +27,7 @@ const ImageUploader = ({
   const { toast } = useToast();
   const [previewImage, setPreviewImage] = useState<string | undefined>(currentImage);
   const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth(); // Get authentication status
   
   // Maximum file size (in bytes)
   const MAX_FILE_SIZE = maxSize * 1024 * 1024;
@@ -147,6 +149,8 @@ const ImageUploader = ({
     });
   };
 
+  const isLoggedIn = !!session?.user; // Check if user is logged in
+
   return (
     <div className="space-y-4">
       {error && (
@@ -164,40 +168,46 @@ const ImageUploader = ({
               alt="Preview" 
               className="max-h-80 rounded-md mx-auto object-contain"
             />
-            <div className="flex justify-center mt-4 gap-2">
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => document.getElementById('file-input')?.click()}
-                className="bg-white hover:bg-gray-100"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Replace
-              </Button>
-              <Button 
-                type="button" 
-                variant="destructive"
-                onClick={handleRemoveImage}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Remove
-              </Button>
-            </div>
+            {isLoggedIn && ( // Only show image controls for logged-in users
+              <div className="flex justify-center mt-4 gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  className="bg-white hover:bg-gray-100"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Replace
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="destructive"
+                  onClick={handleRemoveImage}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-6">
             <Image className="mx-auto h-12 w-12 text-gray-400" />
             <div className="mt-4 flex flex-col items-center">
-              <label htmlFor="file-input" className="cursor-pointer">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={uploading}
-                  className="bg-white hover:bg-gray-100"
-                >
-                  {uploading ? 'Uploading...' : label}
-                </Button>
-              </label>
+              {isLoggedIn ? ( // Only show upload button for logged-in users
+                <label htmlFor="file-input" className="cursor-pointer">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading}
+                    className="bg-white hover:bg-gray-100"
+                  >
+                    {uploading ? 'Uploading...' : label}
+                  </Button>
+                </label>
+              ) : (
+                <p className="text-sm text-gray-500">You need to be logged in to upload images</p>
+              )}
               <p className="text-xs text-gray-500 mt-2">
                 JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC up to {maxSize}MB
               </p>
@@ -206,14 +216,16 @@ const ImageUploader = ({
         )}
       </div>
 
-      <input
-        id="file-input"
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-        accept="image/*"
-        disabled={uploading}
-      />
+      {isLoggedIn && (
+        <input
+          id="file-input"
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept="image/*"
+          disabled={uploading}
+        />
+      )}
     </div>
   );
 };
