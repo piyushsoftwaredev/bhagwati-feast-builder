@@ -12,6 +12,7 @@ import {
   Database,
   Menu as MenuIcon,
   Globe,
+  Layout,
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -33,6 +34,11 @@ const AdminSidebar = () => {
       name: 'Site Config',
       tab: 'site-config',
       icon: <Globe className="h-5 w-5" />
+    },
+    { 
+      name: 'Homepage Nav',
+      tab: 'homepage-nav',
+      icon: <Layout className="h-5 w-5" />
     },
     { 
       name: 'Map',

@@ -10,6 +10,7 @@ import MessagesManager from '@/components/admin/MessagesManager';
 import MapSettings from '@/components/admin/MapSettings';
 import MenuManager from '@/components/admin/MenuManager';
 import SiteConfig from '@/components/admin/SiteConfig';
+import HomepageNavManager from '@/components/admin/HomepageNavManager';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DatabaseType } from '@/lib/database-provider';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,6 +90,7 @@ const Admin = () => {
               <TabsList className="hidden">
                 <TabsTrigger value="site-settings">Settings</TabsTrigger>
                 <TabsTrigger value="site-config">Site Config</TabsTrigger>
+                <TabsTrigger value="homepage-nav">Homepage Nav</TabsTrigger>
                 <TabsTrigger value="map">Map</TabsTrigger>
                 <TabsTrigger value="posts">Posts</TabsTrigger>
                 <TabsTrigger value="menu">Menu</TabsTrigger>
@@ -104,6 +106,10 @@ const Admin = () => {
               
               <TabsContent value="site-config">
                 <SiteConfig />
+              </TabsContent>
+              
+              <TabsContent value="homepage-nav">
+                <HomepageNavManager />
               </TabsContent>
               
               <TabsContent value="map">
