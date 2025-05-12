@@ -1,4 +1,3 @@
-
 import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,6 +13,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Booking = lazy(() => import("./pages/Booking"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const FullMenu = lazy(() => import("./pages/FullMenu"));
 
 // Create QueryClient instance with optimized caching configuration
 const queryClient = new QueryClient({
@@ -115,6 +115,7 @@ const App = () => {
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/booking" element={<Booking />} />
+                <Route path="/menu" element={<FullMenu />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

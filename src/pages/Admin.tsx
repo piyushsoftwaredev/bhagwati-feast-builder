@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminNav from '@/components/admin/AdminNav';
@@ -8,6 +7,7 @@ import SiteSettings from '@/components/admin/SiteSettings';
 import ImageManager from '@/components/admin/ImageManager';
 import MessagesManager from '@/components/admin/MessagesManager';
 import MapSettings from '@/components/admin/MapSettings';
+import MenuManager from '@/components/admin/MenuManager';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DatabaseType } from '@/lib/database-provider';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,12 +108,7 @@ const Admin = () => {
               </TabsContent>
 
               <TabsContent value="menu">
-                <div className="text-center py-8">
-                  <h2 className="text-2xl font-bold text-bhagwati-maroon mb-4">Menu Management</h2>
-                  <p className="text-gray-600 mb-4">
-                    This feature is coming soon! You'll soon be able to manage your menu items and categories here.
-                  </p>
-                </div>
+                <MenuManager />
               </TabsContent>
   
               <TabsContent value="images">

@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronRight, UtensilsCrossed } from "lucide-react";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Link } from "react-router-dom";
 
 interface MenuItem {
@@ -187,7 +186,7 @@ const Menu = () => {
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-bhagwati-maroon">{item.name}</CardTitle>
-                          <span className="font-bold text-bhagwati-gold">₹{item.price}</span>
+                          {/* Price hidden as requested */}
                         </div>
                       </CardHeader>
                       <CardContent>
