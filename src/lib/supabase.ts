@@ -1,4 +1,3 @@
-
 // Type definitions for Supabase related functionality
 import { supabase } from '@/integrations/supabase/client';
 
@@ -92,7 +91,7 @@ export const demoData = {
   ]
 };
 
-// Helper function to upload an image with support for larger files
+// Helper function to upload an image with no size or type restrictions
 export const uploadImage = async (file: File, folder: string = 'uploads') => {
   try {
     // Create a safe filename (replace spaces, remove special chars)
@@ -108,17 +107,12 @@ export const uploadImage = async (file: File, folder: string = 'uploads') => {
     const baseName = safeFileName.substring(0, safeFileName.lastIndexOf('.'));
     const finalFileName = `${baseName}-${timestamp}.${fileExt}`;
     
-    // Check file size
-    if (file.size > 50 * 1024 * 1024) {
-      throw new Error('File size exceeds 50MB limit');
-    }
-    
-    // Upload to storage with increased timeout for larger files
+    // Upload to storage with no size limit
     const { data, error } = await supabase.storage
       .from('images')
       .upload(`${folder}/${finalFileName}`, file, {
         cacheControl: '3600',
-        upsert: false,
+        upsert: true,
         contentType: file.type,
       });
 

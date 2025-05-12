@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2, Upload, Image, AlertCircle } from 'lucide-react';
+import { Trash2, Upload, Image } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage, deleteImage } from '@/lib/supabase';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ImageUploaderProps {
@@ -13,25 +12,19 @@ interface ImageUploaderProps {
   onImageSelected: (imageUrl: string) => void;
   folder?: string;
   label?: string;
-  maxSize?: number; // Size in MB
 }
 
 const ImageUploader = ({
   currentImage,
   onImageSelected,
   folder = 'uploads',
-  label = 'Choose Image',
-  maxSize = 50 // Default to 50MB
+  label = 'Choose Image'
 }: ImageUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const [previewImage, setPreviewImage] = useState<string | undefined>(currentImage);
-  const [error, setError] = useState<string | null>(null);
   const { session } = useAuth(); // Get authentication status
   
-  // Maximum file size (in bytes)
-  const MAX_FILE_SIZE = maxSize * 1024 * 1024;
-
   // Effect to update preview when currentImage prop changes
   useEffect(() => {
     if (currentImage !== previewImage) {
@@ -43,43 +36,6 @@ const ImageUploader = ({
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Reset previous errors
-    setError(null);
-    
-    // Validate file type
-    const acceptedImageTypes = [
-      'image/jpeg', 
-      'image/png', 
-      'image/gif', 
-      'image/webp', 
-      'image/svg+xml',
-      'image/bmp',
-      'image/tiff',
-      'image/heic',
-      'image/heif'
-    ];
-    
-    if (!acceptedImageTypes.includes(file.type)) {
-      setError(`Unsupported file type: ${file.type}. Please select an image file.`);
-      toast({
-        title: 'Invalid File Type',
-        description: 'Please select an image file (JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC, HEIF)',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      setError(`File size exceeds ${maxSize}MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
-      toast({
-        title: 'File Too Large',
-        description: `Image must be less than ${maxSize}MB (current: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setUploading(true);
     
     try {
@@ -92,7 +48,7 @@ const ImageUploader = ({
       };
       fileReader.readAsDataURL(file);
 
-      // Upload the file with chunking for large files
+      // Upload the file without size or type restrictions
       const result = await uploadImage(file, folder);
       
       // Update preview with the actual URL and notify parent
@@ -105,7 +61,6 @@ const ImageUploader = ({
       });
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      setError(error.message || 'Failed to upload image');
       toast({
         title: 'Upload Error',
         description: error.message || 'Failed to upload image',
@@ -153,13 +108,6 @@ const ImageUploader = ({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
       <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 transition-all hover:bg-gray-100">
         {previewImage ? (
           <div className="relative w-full">
@@ -212,7 +160,7 @@ const ImageUploader = ({
                 <p className="text-sm text-gray-500">Login required to upload images</p>
               )}
               <p className="text-xs text-gray-500 mt-2">
-                JPEG, PNG, GIF, WEBP, SVG, BMP, TIFF, HEIC up to {maxSize}MB
+                Upload any type of image file
               </p>
             </div>
           </div>

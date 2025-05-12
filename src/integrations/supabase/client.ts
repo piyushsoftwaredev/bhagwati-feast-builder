@@ -23,7 +23,6 @@ export const checkSupabaseConnection = async () => {
       .maybeSingle();
     
     // As long as we don't get a critical connection error, consider it working
-    // This avoids the issue with the catch syntax on PostgrestFilterBuilder
     return !error || error.code !== 'PGRST116';
   } catch (e) {
     console.error('Supabase connection check failed:', e);
