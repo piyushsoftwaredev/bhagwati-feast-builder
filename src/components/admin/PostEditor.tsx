@@ -25,6 +25,7 @@ const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }),
   content: z.string().min(10, { message: "Content must be at least 10 characters" }),
   published: z.boolean().default(false),
+  featured: z.boolean().default(false),
   featured_image: z.string().optional(),
 });
 
@@ -48,6 +49,7 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
       title: post?.title || "",
       content: post?.content || "",
       published: post?.published || false,
+      featured: post?.featured || false,
       featured_image: post?.featured_image || "",
     }
   });
@@ -122,6 +124,7 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
           title: "",
           content: "",
           published: false,
+          featured: false,
           featured_image: "",
         });
         setFeaturedImage(undefined);
@@ -200,28 +203,53 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="published"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">
-                  Publish Post
-                </FormLabel>
-                <FormDescription>
-                  When turned on, the post will be visible on your website
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="published"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">
+                    Publish Post
+                  </FormLabel>
+                  <FormDescription>
+                    When turned on, the post will be visible on your website
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="featured"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">
+                    Feature Post
+                  </FormLabel>
+                  <FormDescription>
+                    Show this post prominently on the homepage
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-3">
           {onSave && (

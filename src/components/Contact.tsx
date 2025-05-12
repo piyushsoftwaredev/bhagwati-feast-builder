@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import LocationMap from './LocationMap';
 
 const formSchema = z.object({
@@ -34,9 +34,50 @@ const formSchema = z.object({
   }),
 });
 
+interface ContactInfo {
+  address: string;
+  phone1: string;
+  phone2?: string;
+  email1: string;
+  email2?: string;
+}
+
 export default function Contact() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address: '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
+    phone1: '+91 98765 43210',
+    phone2: '+91 91234 56780',
+    email1: 'info@shreebhagwaticaterers.com',
+    email2: 'bookings@shreebhagwaticaterers.com',
+  });
+  
+  useEffect(() => {
+    // Fetch contact info from site_config
+    const fetchContactInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_config')
+          .select('value')
+          .eq('key', 'contact_info')
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error fetching contact info:', error);
+          return;
+        }
+        
+        if (data?.value) {
+          setContactInfo(data.value as ContactInfo);
+        }
+      } catch (error) {
+        console.error('Error fetching contact info:', error);
+      }
+    };
+    
+    fetchContactInfo();
+  }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -190,7 +231,7 @@ export default function Contact() {
                   <MapPin className="h-6 w-6 text-bhagwati-gold mr-3 mt-0.5" />
                   <div>
                     <h4 className="font-medium">Address</h4>
-                    <p className="text-gray-600">123 Catering Street, Foodie District, Mumbai, Maharashtra 400001</p>
+                    <p className="text-gray-600">{contactInfo.address}</p>
                   </div>
                 </div>
                 
@@ -198,8 +239,8 @@ export default function Contact() {
                   <Phone className="h-6 w-6 text-bhagwati-gold mr-3 mt-0.5" />
                   <div>
                     <h4 className="font-medium">Phone</h4>
-                    <p className="text-gray-600">+91 98765 43210</p>
-                    <p className="text-gray-600">+91 91234 56780</p>
+                    <p className="text-gray-600">{contactInfo.phone1}</p>
+                    {contactInfo.phone2 && <p className="text-gray-600">{contactInfo.phone2}</p>}
                   </div>
                 </div>
                 
@@ -207,8 +248,8 @@ export default function Contact() {
                   <Mail className="h-6 w-6 text-bhagwati-gold mr-3 mt-0.5" />
                   <div>
                     <h4 className="font-medium">Email</h4>
-                    <p className="text-gray-600">info@shreebhagwaticaterers.com</p>
-                    <p className="text-gray-600">bookings@shreebhagwaticaterers.com</p>
+                    <p className="text-gray-600">{contactInfo.email1}</p>
+                    {contactInfo.email2 && <p className="text-gray-600">{contactInfo.email2}</p>}
                   </div>
                 </div>
               </div>

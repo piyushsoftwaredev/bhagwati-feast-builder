@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminNav from '@/components/admin/AdminNav';
@@ -8,6 +9,7 @@ import ImageManager from '@/components/admin/ImageManager';
 import MessagesManager from '@/components/admin/MessagesManager';
 import MapSettings from '@/components/admin/MapSettings';
 import MenuManager from '@/components/admin/MenuManager';
+import SiteConfig from '@/components/admin/SiteConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DatabaseType } from '@/lib/database-provider';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,6 +88,7 @@ const Admin = () => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsList className="hidden">
                 <TabsTrigger value="site-settings">Settings</TabsTrigger>
+                <TabsTrigger value="site-config">Site Config</TabsTrigger>
                 <TabsTrigger value="map">Map</TabsTrigger>
                 <TabsTrigger value="posts">Posts</TabsTrigger>
                 <TabsTrigger value="menu">Menu</TabsTrigger>
@@ -97,6 +100,10 @@ const Admin = () => {
   
               <TabsContent value="site-settings">
                 <SiteSettings dbType={dbType} onDatabaseChange={handleDatabaseChange} />
+              </TabsContent>
+              
+              <TabsContent value="site-config">
+                <SiteConfig />
               </TabsContent>
               
               <TabsContent value="map">

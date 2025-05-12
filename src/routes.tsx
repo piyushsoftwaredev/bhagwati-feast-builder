@@ -7,6 +7,8 @@ import NotFound from './pages/NotFound';
 import Booking from './pages/Booking';
 import Dashboard from './pages/Dashboard';
 import FullMenu from './pages/FullMenu';
+import Blog from './pages/Blog';
+import PostDetail from './pages/PostDetail';
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +34,14 @@ export const router = createBrowserRouter([
   {
     path: '/menu',
     element: <FullMenu />,
+  },
+  {
+    path: '/blog',
+    element: <Blog />,
+  },
+  {
+    path: '/post/:id',
+    element: <PostDetail />,
   },
   {
     path: '*',

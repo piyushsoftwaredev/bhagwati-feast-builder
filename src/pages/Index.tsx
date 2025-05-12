@@ -7,6 +7,7 @@ import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import Menu from "@/components/Menu";
+import RecentPosts from "@/components/RecentPosts";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 
@@ -28,6 +29,7 @@ const Index = () => {
       <Services />
       <Menu />
       <Gallery />
+      <RecentPosts />
       <About />
       <Contact />
       <Footer />

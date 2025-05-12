@@ -16,7 +16,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Helper function to check connection status
 export const checkSupabaseConnection = async () => {
   try {
-    // Instead of trying to query a non-existent table, use a simple health check
+    // Use a table we know exists to check the connection
     const { error } = await supabase.from('site_config')
       .select('id')
       .limit(1)

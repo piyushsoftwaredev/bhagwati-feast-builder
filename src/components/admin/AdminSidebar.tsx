@@ -1,166 +1,98 @@
 
-import { Link, useLocation } from 'react-router-dom';
-import { cn } from "@/lib/utils";
-import { 
-  HomeIcon, 
-  Settings, 
-  Image, 
-  FileText, 
-  MessageSquare,
-  ChevronRight,
-  Server,
-  MapPin,
-  Calendar,
-  BookOpen,
-  PanelLeftClose,
-  PanelLeft
-} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  label: string;
-  href: string;
-  isActive: boolean;
-  isCollapsed: boolean;
-}
-
-const SidebarItem = ({ icon, label, href, isActive, isCollapsed }: SidebarItemProps) => {
-  return (
-    <Link 
-      to={href}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md transition-all",
-        isActive 
-          ? "bg-bhagwati-maroon/10 text-bhagwati-maroon font-medium" 
-          : "text-gray-600 hover:bg-gray-100",
-        isCollapsed && "justify-center"
-      )}
-    >
-      {icon}
-      {!isCollapsed && <span>{label}</span>}
-    </Link>
-  );
-};
+import {
+  Settings,
+  Map,
+  FileText,
+  Image as ImageIcon,
+  MessageSquare,
+  Calendar,
+  Database,
+  Menu as MenuIcon,
+  Globe,
+} from 'lucide-react';
 
 const AdminSidebar = () => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
   
-  // Extract the current path or tab from URL
-  const currentPath = location.pathname;
+  // Get the active tab from the URL query parameters
   const searchParams = new URLSearchParams(location.search);
-  const currentTab = searchParams.get('tab');
+  const activeTab = searchParams.get('tab') || 'site-settings';
   
-  const isActive = (path: string) => {
-    if (path.startsWith('/admin?tab=')) {
-      // For paths with tabs
-      const tabName = path.split('=')[1];
-      return currentTab === tabName;
+  // Navigation items with icons
+  const navItems = [
+    { 
+      name: 'Settings',
+      tab: 'site-settings',
+      icon: <Settings className="h-5 w-5" />
+    },
+    { 
+      name: 'Site Config',
+      tab: 'site-config',
+      icon: <Globe className="h-5 w-5" />
+    },
+    { 
+      name: 'Map',
+      tab: 'map',
+      icon: <Map className="h-5 w-5" />
+    },
+    { 
+      name: 'Posts',
+      tab: 'posts',
+      icon: <FileText className="h-5 w-5" />
+    },
+    { 
+      name: 'Menu',
+      tab: 'menu',
+      icon: <MenuIcon className="h-5 w-5" />
+    },
+    { 
+      name: 'Images',
+      tab: 'images',
+      icon: <ImageIcon className="h-5 w-5" />
+    },
+    { 
+      name: 'Messages',
+      tab: 'messages',
+      icon: <MessageSquare className="h-5 w-5" />
+    },
+    { 
+      name: 'Bookings',
+      tab: 'bookings',
+      icon: <Calendar className="h-5 w-5" />
+    },
+    { 
+      name: 'Database',
+      tab: 'database',
+      icon: <Database className="h-5 w-5" />
     }
-    // For regular paths
-    return currentPath === path;
+  ];
+  
+  const handleNavClick = (tab: string) => {
+    navigate(`/admin?tab=${tab}`);
   };
-
+  
   return (
-    <div className={cn(
-      "bg-white border-r h-[calc(100vh-64px)] sticky top-16 transition-all",
-      collapsed ? "w-[70px]" : "w-[240px]"
-    )}>
-      <div className="p-4 flex justify-between items-center">
-        {!collapsed && (
-          <h2 className="font-bold text-bhagwati-maroon">
-            Bhagwati Admin
-          </h2>
-        )}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={cn("p-1", collapsed && "mx-auto")}
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
-        </Button>
+    <div className="w-64 border-r bg-white hidden md:block p-6 overflow-y-auto">
+      <div className="flex flex-col gap-2">
+        {navItems.map((item) => (
+          <Button
+            key={item.tab}
+            variant={activeTab === item.tab ? "default" : "ghost"}
+            className={cn(
+              "justify-start",
+              activeTab === item.tab && "bg-bhagwati-maroon text-white hover:bg-bhagwati-maroon/90"
+            )}
+            onClick={() => handleNavClick(item.tab)}
+          >
+            {item.icon}
+            <span className="ml-2">{item.name}</span>
+          </Button>
+        ))}
       </div>
-      
-      <div className="space-y-1 p-2">
-        <SidebarItem
-          icon={<HomeIcon size={20} />}
-          label="Dashboard"
-          href="/dashboard"
-          isActive={currentPath === '/dashboard'}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<FileText size={20} />}
-          label="Posts"
-          href="/admin?tab=posts"
-          isActive={isActive('/admin?tab=posts')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<BookOpen size={20} />}
-          label="Menu"
-          href="/admin?tab=menu"
-          isActive={isActive('/admin?tab=menu')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<Image size={20} />}
-          label="Images"
-          href="/admin?tab=images"
-          isActive={isActive('/admin?tab=images')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<MessageSquare size={20} />}
-          label="Messages"
-          href="/admin?tab=messages"
-          isActive={isActive('/admin?tab=messages')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<Calendar size={20} />}
-          label="Bookings"
-          href="/admin?tab=bookings"
-          isActive={isActive('/admin?tab=bookings')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<MapPin size={20} />}
-          label="Map Settings"
-          href="/admin?tab=map"
-          isActive={isActive('/admin?tab=map')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<Server size={20} />}
-          label="Database"
-          href="/admin?tab=database"
-          isActive={isActive('/admin?tab=database')}
-          isCollapsed={collapsed}
-        />
-        <SidebarItem
-          icon={<Settings size={20} />}
-          label="Settings"
-          href="/admin?tab=settings"
-          isActive={isActive('/admin?tab=settings')}
-          isCollapsed={collapsed}
-        />
-      </div>
-      
-      {!collapsed && (
-        <div className="absolute bottom-4 left-4 right-4 p-4 bg-gray-50 rounded-lg">
-          <div className="text-xs text-gray-500">
-            <p className="font-medium">Admin Panel</p>
-            <p>Manage your website content and settings</p>
-          </div>
-          <Link to="/" className="flex items-center mt-2 text-xs text-bhagwati-gold hover:underline">
-            View Website <ChevronRight size={14} />
-          </Link>
-        </div>
-      )}
     </div>
   );
 };
