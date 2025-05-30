@@ -65,11 +65,17 @@ const PostEditor = ({ post, onSave }: PostEditorProps) => {
           throw new Error('Failed to update post');
         }
       } else {
-        // Create new post
-        const newPost = addPost({
-          ...values,
+        // Create new post - ensure all required fields are present
+        const newPostData = {
+          title: values.title,
+          content: values.content,
+          published: values.published,
+          featured: values.featured,
+          featured_image: values.featured_image || '',
           author_id: 'admin',
-        });
+        };
+
+        const newPost = addPost(newPostData);
 
         if (newPost) {
           toast({
