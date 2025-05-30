@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, Post, demoData } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,70 +26,48 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import PostEditor from './PostEditor';
+import { getPosts, deletePost as removePost, updatePost, type Post } from '@/lib/json-storage';
 
 const PostManager = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDemo, setIsDemo] = useState(false);
   
   const { toast } = useToast();
 
   // Memoized fetch posts function
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(() => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.warn('Using demo data due to error:', error);
-        setPosts(demoData.posts);
-        setIsDemo(true);
-      } else {
-        const postsData = data || [];
-        setPosts(postsData);
-        setIsDemo(false);
-      }
+      const allPosts = getPosts();
+      setPosts(allPosts);
     } catch (error: any) {
-      console.warn('Using demo data due to exception:', error);
-      setPosts(demoData.posts);
-      setIsDemo(true);
+      console.error('Error loading posts:', error);
+      toast({
+        title: 'Error loading posts',
+        description: 'Failed to load posts from storage',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   // Delete a post
-  const deletePost = async (id: string) => {
+  const deletePost = (id: string) => {
     try {
-      if (isDemo) {
-        // Handle demo mode deletion
+      const success = removePost(id);
+      if (success) {
         setPosts(posts.filter(post => post.id !== id));
         toast({
           title: 'Post Deleted',
-          description: 'Post has been deleted in demo mode',
+          description: 'Post has been deleted successfully',
         });
-        return;
+      } else {
+        throw new Error('Post not found');
       }
-
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      setPosts(posts.filter(post => post.id !== id));
-      
-      toast({
-        title: 'Post Deleted',
-        description: 'Post has been deleted successfully',
-      });
     } catch (error: any) {
       console.error('Error deleting post:', error);
       toast({
@@ -102,30 +79,22 @@ const PostManager = () => {
   };
 
   // Toggle post published status with optimistic updates
-  const togglePublished = async (post: Post) => {
-    // Optimistic update
-    const updatedPosts = posts.map(p => 
-      p.id === post.id ? { ...p, published: !p.published } : p
-    );
-    setPosts(updatedPosts);
-    
+  const togglePublished = (post: Post) => {
     try {
-      if (!isDemo) {
-        const { error } = await supabase
-          .from('posts')
-          .update({ published: !post.published })
-          .eq('id', post.id);
-
-        if (error) throw error;
+      const updatedPost = updatePost(post.id, { published: !post.published });
+      if (updatedPost) {
+        // Optimistic update
+        const updatedPosts = posts.map(p => 
+          p.id === post.id ? updatedPost : p
+        );
+        setPosts(updatedPosts);
+        
+        toast({
+          title: post.published ? 'Post Unpublished' : 'Post Published',
+          description: `The post is now ${post.published ? 'unpublished' : 'published'}`,
+        });
       }
-      
-      toast({
-        title: post.published ? 'Post Unpublished' : 'Post Published',
-        description: `The post is now ${post.published ? 'unpublished' : 'published'}`,
-      });
     } catch (error: any) {
-      // Revert optimistic update on error
-      setPosts(posts);
       console.error('Error toggling post status:', error);
       toast({
         title: 'Error updating post',
@@ -169,29 +138,11 @@ const PostManager = () => {
               <PostEditor 
                 post={editingPost} 
                 onSave={() => setIsDialogOpen(false)} 
-                isDemo={isDemo}
               />
             </div>
           </DialogContent>
         </Dialog>
       </div>
-
-      {isDemo && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                Running in demo mode. Changes won't be saved to the database.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
@@ -224,6 +175,7 @@ const PostManager = () => {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Featured</TableHead>
                   <TableHead className="hidden sm:table-cell">Created</TableHead>
                   <TableHead className="hidden md:table-cell">Updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -240,6 +192,15 @@ const PostManager = () => {
                           : 'bg-gray-100 text-gray-800'
                       }`}>
                         {post.published ? 'Published' : 'Draft'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        post.featured 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {post.featured ? 'Featured' : 'Normal'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{format(new Date(post.created_at), 'MMM d, yyyy')}</TableCell>

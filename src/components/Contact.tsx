@@ -1,26 +1,11 @@
+
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Phone, MapPin } from 'lucide-react';
-
-interface ContactInfo {
-  address: string;
-  phone1: string;
-  phone2?: string;
-  email1: string;
-  email2?: string;
-}
-
-const defaultContactInfo: ContactInfo = {
-  address: '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
-  phone1: '+91 98765 43210',
-  phone2: '+91 91234 56780',
-  email1: 'info@shreebhagwaticaterers.com',
-  email2: 'bookings@shreebhagwaticaterers.com'
-};
+import { getContactInfo, type ContactInfo } from '@/lib/json-storage';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -29,33 +14,10 @@ const Contact = () => {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactInfo, setContactInfo] = useState<ContactInfo>(defaultContactInfo);
+  const [contactInfo, setContactInfo] = useState<ContactInfo>(getContactInfo());
 
   useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('site_config')
-          .select('value')
-          .eq('key', 'contact_info')
-          .single();
-        
-        if (error) {
-          console.error('Error fetching contact info:', error);
-          return;
-        }
-        
-        if (data?.value) {
-          // Cast to ContactInfo type
-          const contactData = data.value as ContactInfo;
-          setContactInfo(contactData);
-        }
-      } catch (err) {
-        console.error('Error in contact info fetch:', err);
-      }
-    };
-    
-    fetchContactInfo();
+    setContactInfo(getContactInfo());
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +82,6 @@ const Contact = () => {
             <div className="bg-gray-50 p-8 rounded-lg shadow-sm">
               <h3 className="text-xl font-semibold mb-6 text-bhagwati-maroon">Send us a message</h3>
               
-              {/* Contact form */}
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">Name</label>
@@ -212,7 +173,6 @@ const Contact = () => {
               
               <div>
                 <h3 className="text-xl font-semibold mb-6 text-bhagwati-maroon">Visit Us</h3>
-                {/* Replace with your actual map component */}
                 <div>
                   <iframe 
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3773.132140459938!2d72.8365911747965!3d18.96749778204316!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7ce34c2ca4b9d%3A0x4ca2a2f5595c984!2sShree%20Bhagwati%20Caterers!5e0!3m2!1sen!2sus!4v1622037952939!5m2!1sen!2sus"

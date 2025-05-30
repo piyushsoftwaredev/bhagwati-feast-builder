@@ -1,9 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase, Post, uploadImage } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,8 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useAuth } from '@/contexts/AuthContext';
-import ImageUploader from './ImageUploader';
+import { addPost, updatePost, type Post } from '@/lib/json-storage';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }),
@@ -34,14 +32,11 @@ type FormValues = z.infer<typeof formSchema>;
 interface PostEditorProps {
   post?: Post | null;
   onSave?: () => void;
-  isDemo?: boolean;
 }
 
-const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
+const PostEditor = ({ post, onSave }: PostEditorProps) => {
   const { toast } = useToast();
-  const { session } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState<string | undefined>(post?.featured_image);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -55,79 +50,44 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!session?.user?.id && !isDemo) {
-      toast({
-        title: 'Authentication Error',
-        description: 'You must be logged in to create or edit posts',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const postData = {
-        ...values,
-        featured_image: featuredImage,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (isDemo) {
-        // Handle demo mode - just simulate success
-        setTimeout(() => {
-          toast({
-            title: post?.id ? 'Post Updated' : 'Post Created',
-            description: `The post has been ${post?.id ? 'updated' : 'created'} successfully in demo mode`,
-          });
-          if (onSave) onSave();
-        }, 500);
-        return;
-      }
-
       if (post?.id) {
         // Update existing post
-        const { error } = await supabase
-          .from('posts')
-          .update(postData)
-          .eq('id', post.id);
+        const updatedPost = updatePost(post.id, values);
         
-        if (error) throw error;
-        
-        toast({
-          title: 'Post Updated',
-          description: 'The post has been updated successfully',
-        });
+        if (updatedPost) {
+          toast({
+            title: 'Post Updated',
+            description: 'The post has been updated successfully',
+          });
+        } else {
+          throw new Error('Failed to update post');
+        }
       } else {
-        // Create new post - ensure required fields are provided
-        const newPost = {
-          ...postData,
-          title: values.title, // Title is required
-          author_id: session?.user?.id || 'demo-user',
-          created_at: new Date().toISOString(),
-        };
-
-        const { error } = await supabase
-          .from('posts')
-          .insert(newPost);
-
-        if (error) throw error;
-        
-        toast({
-          title: 'Post Created',
-          description: 'The new post has been created successfully',
+        // Create new post
+        const newPost = addPost({
+          ...values,
+          author_id: 'admin',
         });
-      }
 
-      // Reset form for new posts
-      if (!post?.id) {
-        form.reset({
-          title: "",
-          content: "",
-          published: false,
-          featured: false,
-          featured_image: "",
-        });
-        setFeaturedImage(undefined);
+        if (newPost) {
+          toast({
+            title: 'Post Created',
+            description: 'The new post has been created successfully',
+          });
+          
+          // Reset form for new posts
+          form.reset({
+            title: "",
+            content: "",
+            published: false,
+            featured: false,
+            featured_image: "",
+          });
+        } else {
+          throw new Error('Failed to create post');
+        }
       }
       
       if (onSave) onSave();
@@ -141,11 +101,6 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleImageUpload = async (imageUrl: string) => {
-    setFeaturedImage(imageUrl);
-    form.setValue('featured_image', imageUrl);
   };
 
   return (
@@ -188,15 +143,15 @@ const PostEditor = ({ post, onSave, isDemo = false }: PostEditorProps) => {
           name="featured_image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Featured Image</FormLabel>
+              <FormLabel>Featured Image URL</FormLabel>
               <FormControl>
-                <ImageUploader 
-                  currentImage={featuredImage} 
-                  onImageSelected={handleImageUpload}
+                <Input 
+                  placeholder="https://example.com/image.jpg" 
+                  {...field}
                 />
               </FormControl>
               <FormDescription>
-                Upload a featured image for your post
+                Enter the URL of the featured image for your post
               </FormDescription>
               <FormMessage />
             </FormItem>
