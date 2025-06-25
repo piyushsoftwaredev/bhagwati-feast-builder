@@ -1,205 +1,140 @@
+
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { session } = useAuth();
-  const location = useLocation();
-  const isAuthenticated = !!session?.user;
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    // Close the mobile menu when the route changes
-    setIsMobileMenuOpen(false);
-  }, [location]);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
 
-  const getNavLinkClass = (isActive: boolean) => {
-    return `block py-2 px-4 rounded transition-colors duration-200
-      ${isActive
-        ? 'text-bhagwati-maroon font-semibold'
-        : 'text-gray-700 hover:bg-gray-100 hover:text-bhagwati-maroon'
-      }`;
-  };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  const getMobileNavLinkClass = (isActive: boolean) => {
-    return `block py-2 px-4 text-left rounded transition-colors duration-200
-      ${isActive
-        ? 'text-bhagwati-maroon font-semibold bg-gray-100'
-        : 'text-gray-700 hover:bg-gray-100 hover:text-bhagwati-maroon'
-      }`;
-  };
-
-  const handleNavLinkClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, sectionId: string) => {
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
-    const element = document.getElementById(sectionId);
+    const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm py-4 fixed w-full top-0 z-50 shadow-sm">
-      <div className="content-container flex justify-between items-center">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <span className="font-bold text-xl text-bhagwati-maroon">
-              Shree <span className="text-bhagwati-gold">Bhagwati</span> Caterers
-            </span>
-          </Link>
-        </div>
+    <>
+      {/* Glass Effect Header */}
+      <header 
+        className={`fixed w-full top-0 z-50 transition-all duration-500 ${
+          isScrolled 
+            ? 'bg-white/80 backdrop-blur-lg border-b border-white/20 shadow-lg' 
+            : 'bg-white/95 backdrop-blur-md'
+        }`}
+        style={{
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
+        
+        <nav className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            {/* Logo */}
+            <Link to="/" className="flex items-center group">
+              <div className="relative">
+                <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-bhagwati-maroon via-bhagwati-gold to-bhagwati-maroon bg-clip-text text-transparent">
+                  Shree
+                </span>
+                <span className="ml-2 text-2xl md:text-3xl font-bold text-bhagwati-gold">
+                  Bhagwati
+                </span>
+                <span className="ml-2 text-2xl md:text-3xl font-light text-bhagwati-maroon">
+                  Caterers
+                </span>
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+              </div>
+            </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex space-x-6">
-          <NavLink 
-            to="/#home" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-            onClick={(e) => handleNavLinkClick(e, 'home')}
-          >
-            Home
-          </NavLink>
-          <NavLink 
-            to="/#services" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-            onClick={(e) => handleNavLinkClick(e, 'services')}
-          >
-            Services
-          </NavLink>
-          <NavLink 
-            to="/menu" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-          >
-            Menu
-          </NavLink>
-          <NavLink 
-            to="/blog" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-          >
-            Blog
-          </NavLink>
-          <NavLink 
-            to="/#about" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-            onClick={(e) => handleNavLinkClick(e, 'about')}
-          >
-            About
-          </NavLink>
-          <NavLink 
-            to="/#contact" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-            onClick={(e) => handleNavLinkClick(e, 'contact')}
-          >
-            Contact
-          </NavLink>
-          <NavLink 
-            to="/booking" 
-            className={({ isActive }) => getNavLinkClass(isActive)}
-          >
-            Book Now
-          </NavLink>
-          {/* Admin link only shows if authenticated */}
-          {isAuthenticated && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => getNavLinkClass(isActive)}
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {[
+                { name: 'Home', href: '#home' },
+                { name: 'Services', href: '#services' },
+                { name: 'Menu', href: '#menu' },
+                { name: 'Gallery', href: '#gallery' },
+                { name: 'About', href: '#about' },
+                { name: 'Contact', href: '#contact' },
+              ].map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleSmoothScroll(e, item.href.substring(1))}
+                  className="relative px-4 py-2 text-gray-700 font-medium rounded-lg transition-all duration-300 hover:text-bhagwati-maroon group"
+                >
+                  <span className="relative z-10">{item.name}</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-bhagwati-gold/20 to-bhagwati-maroon/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-white/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm"></div>
+                </a>
+              ))}
+              
+              {/* CTA Button */}
+              <Link
+                to="/booking"
+                className="ml-4 px-6 py-3 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group"
+              >
+                <span className="relative z-10">Book Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-bhagwati-gold to-bhagwati-maroon opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Link>
+            </div>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden relative p-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-bhagwati-maroon hover:bg-white/30 transition-all duration-300"
             >
-              Admin
-            </NavLink>
-          )}
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </nav>
 
-        {/* Mobile Navigation Button */}
-        <button
-          className="md:hidden text-gray-700 focus:outline-none"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? (
-            <X size={24} />
-          ) : (
-            <Menu size={24} />
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Navigation Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white absolute top-16 left-0 right-0 border-t border-gray-200 shadow-lg">
-          <div className="flex flex-col p-4 space-y-3">
-            <NavLink 
-              to="/#home" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={(e) => {
-                handleNavLinkClick(e, 'home');
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              Home
-            </NavLink>
-            <NavLink 
-              to="/#services" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={(e) => {
-                handleNavLinkClick(e, 'services');
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              Services
-            </NavLink>
-            <NavLink 
-              to="/menu" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Menu
-            </NavLink>
-            <NavLink 
-              to="/blog" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Blog
-            </NavLink>
-            <NavLink 
-              to="/#about" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={(e) => {
-                handleNavLinkClick(e, 'about');
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              About
-            </NavLink>
-            <NavLink 
-              to="/#contact" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={(e) => {
-                handleNavLinkClick(e, 'contact');
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              Contact
-            </NavLink>
-            <NavLink 
-              to="/booking" 
-              className={({ isActive }) => getMobileNavLinkClass(isActive)}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Book Now
-            </NavLink>
-            {/* Admin link only shows if authenticated */}
-            {isAuthenticated && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) => getMobileNavLinkClass(isActive)}
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-white/20 shadow-xl">
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+              {[
+                { name: 'Home', href: '#home' },
+                { name: 'Services', href: '#services' },
+                { name: 'Menu', href: '#menu' },
+                { name: 'Gallery', href: '#gallery' },
+                { name: 'About', href: '#about' },
+                { name: 'Contact', href: '#contact' },
+              ].map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => handleSmoothScroll(e, item.href.substring(1))}
+                  className="block px-4 py-3 text-gray-700 font-medium rounded-lg hover:bg-gradient-to-r hover:from-bhagwati-gold/20 hover:to-bhagwati-maroon/20 hover:text-bhagwati-maroon transition-all duration-300"
+                >
+                  {item.name}
+                </a>
+              ))}
+              
+              <Link
+                to="/booking"
                 onClick={() => setIsMobileMenuOpen(false)}
+                className="block w-full text-center px-6 py-3 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mt-4"
               >
-                Admin
-              </NavLink>
-            )}
+                Book Now
+              </Link>
+            </div>
           </div>
-        </div>
-      )}
-    </header>
+        )}
+      </header>
+    </>
   );
 };
 
