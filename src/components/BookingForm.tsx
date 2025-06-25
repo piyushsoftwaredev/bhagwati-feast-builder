@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -57,25 +56,22 @@ const BookingForm = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
-        .from('booking_requests')
-        .insert([
-          { 
-            name: values.name,
-            email: values.email,
-            phone: values.phone,
-            event_type: values.eventType,
-            date: values.date.toISOString().split('T')[0],
-            guest_count: values.guestCount,
-            message: values.message,
-          }
-        ]);
-
-      if (error) throw error;
+      // Simulate form submission for static site
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('Booking request (Demo Mode):', {
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        event_type: values.eventType,
+        date: values.date.toISOString().split('T')[0],
+        guest_count: values.guestCount,
+        message: values.message,
+      });
       
       toast({
-        title: "Booking Request Submitted",
-        description: "Thank you for your interest! We'll get back to you shortly to discuss your event details.",
+        title: "Booking Request Submitted (Demo Mode)",
+        description: "Thank you for your interest! In a real implementation, we would get back to you shortly to discuss your event details.",
         duration: 5000,
       });
       

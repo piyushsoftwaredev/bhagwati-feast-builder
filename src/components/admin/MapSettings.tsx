@@ -1,11 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface MapSettings {
@@ -22,7 +21,7 @@ interface MapSettings {
 }
 
 const defaultMapSettings: MapSettings = {
-  mapbox_token: 'pk.eyJ1IjoibG92YWJsZWRldiIsImEiOiJjbDBkbTk5YWYwOHZsM2NxcWs1OG9ka2tuIn0.0wNxwnNjJPWZMkCGc8gpXw',
+  mapbox_token: 'pk.demo-token',
   latitude: '19.0760',
   longitude: '72.8777',
   zoom: 12,
@@ -37,43 +36,7 @@ const defaultMapSettings: MapSettings = {
 const MapSettings = () => {
   const [settings, setSettings] = useState<MapSettings>(defaultMapSettings);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('site_config')
-          .select('*')
-          .eq('key', 'map_settings')
-          .single();
-
-        if (error) {
-          console.error('Error fetching map settings:', error);
-          return;
-        }
-
-        if (data && data.value) {
-          // Convert the JSON value to an object
-          const mapSettings = typeof data.value === 'string' 
-            ? JSON.parse(data.value)
-            : data.value;
-            
-          setSettings({
-            ...defaultMapSettings,
-            ...mapSettings
-          });
-        }
-      } catch (error) {
-        console.error('Error parsing map settings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSettings();
-  }, []);
 
   const handleChange = (field: keyof MapSettings, value: string | number | boolean) => {
     setSettings(prev => ({
@@ -86,23 +49,14 @@ const MapSettings = () => {
     try {
       setSaving(true);
       
-      // Convert the settings object to a JSON string to ensure it's properly
-      // stored as a JSON value in Supabase
-      const { error } = await supabase
-        .from('site_config')
-        .upsert({
-          key: 'map_settings',
-          value: settings as any, // Type assertion to fix TS error
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'key'
-        });
-
-      if (error) throw error;
+      // Simulate save for static site
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Map settings saved (Demo Mode):', settings);
 
       toast({
-        title: 'Settings Saved',
-        description: 'Map settings have been updated successfully.',
+        title: 'Settings Saved (Demo Mode)',
+        description: 'Map settings have been updated successfully in demo mode.',
       });
     } catch (error) {
       console.error('Error saving map settings:', error);
@@ -116,23 +70,12 @@ const MapSettings = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Map Settings</CardTitle>
-          <CardDescription>Loading settings...</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Map Settings</CardTitle>
+        <CardTitle>Map Settings (Demo Mode)</CardTitle>
         <CardDescription>
-          Configure your location map settings
+          Configure your location map settings - Demo functionality only
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -148,7 +91,7 @@ const MapSettings = () => {
                 className="font-mono text-sm"
               />
               <p className="text-sm text-gray-500 mt-1">
-                Get a token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Mapbox</a>
+                Demo token - get a real token from Mapbox for production
               </p>
             </div>
 
@@ -262,7 +205,7 @@ const MapSettings = () => {
           </div>
 
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? 'Saving...' : 'Save Settings (Demo)'}
           </Button>
         </form>
       </CardContent>

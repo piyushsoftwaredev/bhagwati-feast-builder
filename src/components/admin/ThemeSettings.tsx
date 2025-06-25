@@ -1,11 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { supabase, saveThemeSettings, getThemeSettings } from '@/lib/supabase';
+import { getThemeSettings, saveThemeSettings } from '@/lib/supabase';
 import type { ThemeSettings as ThemeSettingsType } from '@/lib/supabase';
-import { parseThemeSettings } from '@/lib/theme-utils';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +39,7 @@ type FormData = z.infer<typeof formSchema>;
 
 const ThemeSettings = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -53,27 +52,6 @@ const ThemeSettings = () => {
       custom_css: '',
     },
   });
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      setIsLoading(true);
-      try {
-        const settings = await getThemeSettings();
-        form.reset(settings);
-      } catch (error) {
-        console.error('Error fetching theme settings:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load theme settings',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSettings();
-  }, [form, toast]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -89,16 +67,14 @@ const ThemeSettings = () => {
         custom_css: data.custom_css || ''
       };
       
-      const success = await saveThemeSettings(themeData);
+      // Simulate save for static site
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Theme settings saved (Demo Mode):', themeData);
       
-      if (success) {
-        toast({
-          title: 'Theme Settings Saved',
-          description: 'Your theme settings have been updated successfully',
-        });
-      } else {
-        throw new Error('Failed to save settings');
-      }
+      toast({
+        title: 'Theme Settings Saved (Demo Mode)',
+        description: 'Your theme settings have been updated successfully in demo mode',
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
@@ -114,9 +90,9 @@ const ThemeSettings = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Theme Settings</CardTitle>
+        <CardTitle>Theme Settings (Demo Mode)</CardTitle>
         <CardDescription>
-          Customize the appearance of your website by adjusting the colors and styles.
+          Customize the appearance of your website by adjusting the colors and styles - Demo functionality only
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -258,7 +234,7 @@ const ThemeSettings = () => {
             
             <div className="flex justify-end">
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Theme Settings'}
+                {isLoading ? 'Saving...' : 'Save Theme Settings (Demo)'}
               </Button>
             </div>
           </form>

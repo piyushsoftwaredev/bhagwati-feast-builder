@@ -1,6 +1,5 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Card,
@@ -24,8 +23,8 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Trash2, Mail, Calendar } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Mail, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 type ContactMessage = {
@@ -49,60 +48,46 @@ type BookingRequest = {
   created_at: string;
 };
 
+// Demo data
+const demoContactMessages: ContactMessage[] = [
+  {
+    id: 'contact-1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '+91 98765 43210',
+    message: 'Interested in catering services for a corporate event.',
+    created_at: new Date().toISOString(),
+  }
+];
+
+const demoBookingRequests: BookingRequest[] = [
+  {
+    id: 'booking-1',
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    phone: '+91 98765 43211',
+    event_type: 'Wedding',
+    date: '2024-03-15',
+    guest_count: 150,
+    message: 'Need catering for a wedding reception with 150 guests.',
+    created_at: new Date().toISOString(),
+  }
+];
+
 const MessagesManager = () => {
-  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
-  const [bookings, setBookings] = useState<BookingRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>(demoContactMessages);
+  const [bookings, setBookings] = useState<BookingRequest[]>(demoBookingRequests);
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('contacts');
   
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch contact messages
-      const { data: contactData, error: contactError } = await supabase
-        .from('contact_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (contactError) throw contactError;
-      setContactMessages(contactData || []);
-      
-      // Fetch booking requests
-      const { data: bookingData, error: bookingError } = await supabase
-        .from('booking_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (bookingError) throw bookingError;
-      setBookings(bookingData || []);
-    } catch (error: any) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: "Data Fetch Error",
-        description: error.message || "Could not load messages",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteContact = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
       setContactMessages(contactMessages.filter(msg => msg.id !== id));
       toast({
-        title: 'Message Deleted',
+        title: 'Message Deleted (Demo Mode)',
         description: 'Contact message has been deleted successfully',
       });
     } catch (error: any) {
@@ -117,16 +102,9 @@ const MessagesManager = () => {
 
   const handleDeleteBooking = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('booking_requests')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
       setBookings(bookings.filter(booking => booking.id !== id));
       toast({
-        title: 'Booking Deleted',
+        title: 'Booking Deleted (Demo Mode)',
         description: 'Booking request has been deleted successfully',
       });
     } catch (error: any) {
@@ -149,11 +127,6 @@ const MessagesManager = () => {
     setIsDialogOpen(true);
   };
 
-  // Initial fetch
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM d, yyyy, h:mm a');
   };
@@ -162,12 +135,9 @@ const MessagesManager = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Messages & Bookings</h2>
-          <p className="text-muted-foreground">Manage contact messages and booking requests</p>
+          <h2 className="text-2xl font-bold">Messages & Bookings (Demo Mode)</h2>
+          <p className="text-muted-foreground">Manage contact messages and booking requests - Demo data only</p>
         </div>
-        <Button variant="outline" onClick={fetchData} disabled={loading}>
-          Refresh
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -194,11 +164,7 @@ const MessagesManager = () => {
 
         {/* Contact Messages Tab */}
         <TabsContent value="contacts">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-            </div>
-          ) : contactMessages.length === 0 ? (
+          {contactMessages.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <p className="text-lg text-gray-500">No contact messages yet</p>
@@ -233,7 +199,7 @@ const MessagesManager = () => {
                               handleDeleteContact(message.id);
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            Delete
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -247,11 +213,7 @@ const MessagesManager = () => {
         
         {/* Booking Requests Tab */}
         <TabsContent value="bookings">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-bhagwati-gold"></div>
-            </div>
-          ) : bookings.length === 0 ? (
+          {bookings.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <p className="text-lg text-gray-500">No booking requests yet</p>
@@ -288,7 +250,7 @@ const MessagesManager = () => {
                               handleDeleteBooking(booking.id);
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            Delete
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -352,23 +314,6 @@ const MessagesManager = () => {
               <div>
                 <h3 className="font-semibold text-sm text-muted-foreground">Message</h3>
                 <p className="whitespace-pre-wrap">{selectedMessage.message}</p>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (activeTab === 'contacts') {
-                      handleDeleteContact(selectedMessage.id);
-                    } else {
-                      handleDeleteBooking(selectedMessage.id);
-                    }
-                    setIsDialogOpen(false);
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
               </div>
             </div>
           )}
