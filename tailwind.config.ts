@@ -53,12 +53,11 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Custom colors for Bhagwati Caterers
-				bhagwati: {
-					gold: '#D4AF37',
-					maroon: '#800000',
-					cream: '#FFFDD0',
-					turquoise: '#40E0D0',
+				// Brand colors using semantic tokens
+				brand: {
+					maroon: 'hsl(var(--brand-maroon))',
+					gold: 'hsl(var(--brand-gold))',
+					cream: 'hsl(var(--brand-cream))',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',

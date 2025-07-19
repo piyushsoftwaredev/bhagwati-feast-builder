@@ -27,40 +27,35 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Glass Effect Header */}
+      {/* Professional Glass Header */}
       <header 
-        className={`fixed w-full top-0 z-50 transition-all duration-500 ${
-          isScrolled 
-            ? 'bg-white/80 backdrop-blur-lg border-b border-white/20 shadow-lg' 
-            : 'bg-white/95 backdrop-blur-md'
+        className={`fixed w-full top-0 z-50 transition-all duration-300 glass-navbar ${
+          isScrolled ? 'shadow-lg' : ''
         }`}
-        style={{
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
         
         <nav className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            {/* Logo */}
+            {/* Professional Logo */}
             <Link to="/" className="flex items-center group">
-              <div className="relative">
-                <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-bhagwati-maroon via-bhagwati-gold to-bhagwati-maroon bg-clip-text text-transparent">
-                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[0] || "Shree"}
-                </span>
-                <span className="ml-2 text-2xl md:text-3xl font-bold text-bhagwati-gold">
-                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[1] || "Bhagwati"}
-                </span>
-                <span className="ml-2 text-2xl md:text-3xl font-light text-bhagwati-maroon">
-                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[2] || "Caterers"}
-                </span>
-                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+              <div className="relative flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center shadow-sm">
+                  <span className="text-primary-foreground font-bold text-lg">S</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-primary leading-tight">
+                    {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[0] || "Shree"}
+                  </span>
+                  <span className="text-sm font-medium text-secondary leading-tight">
+                    {import.meta.env.VITE_BUSINESS_NAME?.split(' ').slice(1).join(' ') || "Bhagwati Caterers"}
+                  </span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
+            <div className="hidden md:flex items-center space-x-2">
               {[
                 { name: 'Home', href: '#home' },
                 { name: 'Services', href: '#services' },
@@ -73,38 +68,28 @@ const Navbar = () => {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleSmoothScroll(e, item.href.substring(1))}
-                  className="relative px-4 py-2 text-gray-700 font-medium rounded-lg transition-all duration-300 hover:text-bhagwati-maroon group"
+                  className="relative px-4 py-2 text-foreground/80 font-medium rounded-md transition-all duration-200 hover:text-primary hover:bg-accent/50 group"
                 >
                   <span className="relative z-10">{item.name}</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-bhagwati-gold/20 to-bhagwati-maroon/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute inset-0 bg-white/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm"></div>
+                  <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-primary transform -translate-x-1/2 group-hover:w-3/4 transition-all duration-200"></div>
                 </a>
               ))}
-              
-              {/* CTA Button */}
-              <Link
-                to="/booking"
-                className="ml-4 px-6 py-3 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 relative overflow-hidden group"
-              >
-                <span className="relative z-10">Book Now</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-bhagwati-gold to-bhagwati-maroon opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </Link>
             </div>
 
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden relative p-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-bhagwati-maroon hover:bg-white/30 transition-all duration-300"
+              className="md:hidden relative p-2 rounded-md bg-accent/10 hover:bg-accent/20 text-primary transition-all duration-200"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </nav>
 
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-white/20 shadow-xl">
-            <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border shadow-xl">
+            <div className="max-w-7xl mx-auto px-4 py-4 space-y-2">
               {[
                 { name: 'Home', href: '#home' },
                 { name: 'Services', href: '#services' },
@@ -117,19 +102,11 @@ const Navbar = () => {
                   key={item.name}
                   href={item.href}
                   onClick={(e) => handleSmoothScroll(e, item.href.substring(1))}
-                  className="block px-4 py-3 text-gray-700 font-medium rounded-lg hover:bg-gradient-to-r hover:from-bhagwati-gold/20 hover:to-bhagwati-maroon/20 hover:text-bhagwati-maroon transition-all duration-300"
+                  className="block px-4 py-3 text-foreground/80 font-medium rounded-md hover:bg-accent/50 hover:text-primary transition-all duration-200"
                 >
                   {item.name}
                 </a>
               ))}
-              
-              <Link
-                to="/booking"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block w-full text-center px-6 py-3 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold text-white font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 mt-4"
-              >
-                Book Now
-              </Link>
             </div>
           </div>
         )}
