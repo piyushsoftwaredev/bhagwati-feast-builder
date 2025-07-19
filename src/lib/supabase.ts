@@ -28,9 +28,9 @@ export type Page = {
   title: string;
   content: string;
   slug: string;
-  published?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ThemeSettings = {

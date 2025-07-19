@@ -12,9 +12,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           <div>
             <div className="flex items-center mb-4">
-              <span className="text-white font-bold text-xl">Shree</span>
-              <span className="text-bhagwati-gold font-bold text-2xl mx-1">BHAGWATI</span>
-              <span className="text-white font-bold text-xl">Caterers</span>
+              <span className="text-white font-bold text-xl">{import.meta.env.VITE_BUSINESS_NAME?.split(' ')[0] || "Shree"}</span>
+              <span className="text-bhagwati-gold font-bold text-2xl mx-1">{import.meta.env.VITE_BUSINESS_NAME?.split(' ')[1]?.toUpperCase() || "BHAGWATI"}</span>
+              <span className="text-white font-bold text-xl">{import.meta.env.VITE_BUSINESS_NAME?.split(' ')[2] || "Caterers"}</span>
             </div>
             <p className="mb-6 text-gray-400">
               Creating unforgettable culinary experiences with authentic flavors, elegant 
@@ -78,15 +78,15 @@ const Footer = () => {
             <div className="mt-6 space-y-3 text-gray-400">
               <div className="flex items-center">
                 <Phone size={16} className="mr-2" />
-                <span>+91 98765 43210</span>
+                <span>{import.meta.env.VITE_BUSINESS_PHONE_1 || "+91 98765 43210"}</span>
               </div>
               <div className="flex items-center">
                 <Mail size={16} className="mr-2" />
-                <span>info@shreebhagwaticaterers.com</span>
+                <span>{import.meta.env.VITE_BUSINESS_EMAIL_1 || "info@shreebhagwaticaterers.com"}</span>
               </div>
               <div className="flex items-start">
                 <MapPin size={16} className="mr-2 mt-1" />
-                <span>123 Catering Complex, Food Street<br />Gujarat, India - 380001</span>
+                <span>{import.meta.env.VITE_BUSINESS_ADDRESS || "123 Catering Complex, Food Street\nGujarat, India - 380001"}</span>
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 pt-6 mt-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              &copy; {currentYear} Shree Bhagwati Caterers. All rights reserved.
+              &copy; {currentYear} {import.meta.env.VITE_BUSINESS_NAME || "Shree Bhagwati Caterers"}. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>

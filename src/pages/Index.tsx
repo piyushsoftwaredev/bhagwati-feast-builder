@@ -17,7 +17,7 @@ const Index = () => {
   useEffect(() => {
     // Display welcome toast
     toast({
-      title: "Welcome to Shree Bhagwati Caterers",
+      title: `Welcome to ${import.meta.env.VITE_BUSINESS_NAME || "Shree Bhagwati Caterers"}`,
       description: "Explore our premium vegetarian catering services for your special events.",
       duration: 5000,
     });

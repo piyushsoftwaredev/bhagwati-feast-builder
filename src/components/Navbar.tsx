@@ -47,13 +47,13 @@ const Navbar = () => {
             <Link to="/" className="flex items-center group">
               <div className="relative">
                 <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-bhagwati-maroon via-bhagwati-gold to-bhagwati-maroon bg-clip-text text-transparent">
-                  Shree
+                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[0] || "Shree"}
                 </span>
                 <span className="ml-2 text-2xl md:text-3xl font-bold text-bhagwati-gold">
-                  Bhagwati
+                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[1] || "Bhagwati"}
                 </span>
                 <span className="ml-2 text-2xl md:text-3xl font-light text-bhagwati-maroon">
-                  Caterers
+                  {import.meta.env.VITE_BUSINESS_NAME?.split(' ')[2] || "Caterers"}
                 </span>
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-bhagwati-maroon to-bhagwati-gold transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
               </div>

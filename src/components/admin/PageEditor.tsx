@@ -84,7 +84,10 @@ const PageEditor = () => {
         // Create new page
         const newPage: Page = {
           id: `demo-${Date.now()}`,
-          ...values,
+          title: values.title,
+          content: values.content,
+          slug: values.slug,
+          published: values.published,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };

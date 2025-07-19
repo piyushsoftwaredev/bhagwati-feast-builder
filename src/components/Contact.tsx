@@ -3,11 +3,13 @@ import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 const Contact = () => {
   const contactInfo = {
-    address: '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
-    phone1: '+91 98765 43210',
-    phone2: '+91 91234 56780',
-    email1: 'info@shreebhagwaticaterers.com',
-    email2: 'bookings@shreebhagwaticaterers.com'
+    address: import.meta.env.VITE_BUSINESS_ADDRESS || '123 Catering Street, Foodie District, Mumbai, Maharashtra 400001',
+    phone1: import.meta.env.VITE_BUSINESS_PHONE_1 || '+91 98765 43210',
+    phone2: import.meta.env.VITE_BUSINESS_PHONE_2 || '+91 91234 56780',
+    email1: import.meta.env.VITE_BUSINESS_EMAIL_1 || 'info@shreebhagwaticaterers.com',
+    email2: import.meta.env.VITE_BUSINESS_EMAIL_2 || 'bookings@shreebhagwaticaterers.com',
+    hoursMonSat: import.meta.env.VITE_BUSINESS_HOURS_MON_SAT || '9:00 AM - 8:00 PM',
+    hoursSun: import.meta.env.VITE_BUSINESS_HOURS_SUN || '10:00 AM - 6:00 PM'
   };
 
   return (
@@ -68,8 +70,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-bhagwati-maroon mb-1">Business Hours</h4>
-                    <p className="text-gray-600">Mon - Sat: 9:00 AM - 8:00 PM</p>
-                    <p className="text-gray-600">Sunday: 10:00 AM - 6:00 PM</p>
+                    <p className="text-gray-600">Mon - Sat: {contactInfo.hoursMonSat}</p>
+                    <p className="text-gray-600">Sunday: {contactInfo.hoursSun}</p>
                   </div>
                 </div>
               </div>
@@ -95,7 +97,7 @@ const Contact = () => {
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-2 shadow-xl border border-white/20">
             <div className="aspect-w-16 aspect-h-12 rounded-xl overflow-hidden">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.0234567890123!2d72.8776!3d19.0760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDA0JzMzLjYiTiA3MsKwNTInMzkuNCJF!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"
+                src={import.meta.env.VITE_MAP_EMBED_URL || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.0234567890123!2d72.8776!3d19.0760!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDA0JzMzLjYiTiA3MsKwNTInMzkuNCJF!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"}
                 width="100%"
                 height="400"
                 style={{ border: 0 }}
