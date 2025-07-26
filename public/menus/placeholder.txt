@@ -1,0 +1,11 @@
+# Menu PDFs Placeholder
+
+Place your actual PDF menu files in this directory:
+
+- wedding-menu.pdf
+- corporate-menu.pdf  
+- premium-menu.pdf
+- festival-menu.pdf
+
+For development, create PDF files or use placeholder PDFs.
+The MenuPDFPreview component will handle these files automatically.

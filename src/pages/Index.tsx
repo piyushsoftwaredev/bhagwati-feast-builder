@@ -7,9 +7,11 @@ import Gallery from "@/components/Gallery";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import Menu from "@/components/Menu";
+import MenuPDFPreview from "@/components/MenuPDFPreview";
+import GoogleReviews from "@/components/GoogleReviews";
 import RecentPosts from "@/components/RecentPosts";
 import { useToast } from "@/hooks/use-toast";
+import { envConfig } from "@/lib/env-config";
 
 const Index = () => {
   const { toast } = useToast();
@@ -17,7 +19,7 @@ const Index = () => {
   useEffect(() => {
     // Display welcome toast
     toast({
-      title: `Welcome to ${import.meta.env.VITE_BUSINESS_NAME || "Shree Bhagwati Caterers"}`,
+      title: `Welcome to ${envConfig.business.name}`,
       description: "Explore our premium vegetarian catering services for your special events.",
       duration: 5000,
     });
@@ -28,7 +30,8 @@ const Index = () => {
       <Navbar />
       <Hero />
       <Services />
-      <Menu />
+      <MenuPDFPreview />
+      <GoogleReviews />
       <Gallery />
       <RecentPosts />
       <About />

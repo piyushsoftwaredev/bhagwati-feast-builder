@@ -221,4 +221,47 @@
   .cta-button {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
+
+  /* Enhanced performance classes */
+  .performance-optimized {
+    transform: var(--hardware-acceleration);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform;
+  }
+
+  .smooth-transition {
+    transition: all 0.3s var(--smooth-transitions);
+  }
+
+  .fast-transition {
+    transition: all 0.15s var(--fast-transitions);
+  }
+
+  .gpu-layer {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .line-clamp-4 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+  }
 }
