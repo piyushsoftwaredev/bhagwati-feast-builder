@@ -35,8 +35,8 @@ const Hero = () => {
         <div className="md:w-1/2 flex justify-center md:justify-end relative">
           <div className="relative">
             <img 
-              src="public/lovable-uploads/552bbf7d-7306-47f5-8053-d68be3010abf.png" 
-              alt="Professional Catering Service" 
+              src="/lovable-uploads/c2f8f321-f583-4ec1-abd3-f61a789ec22a.png" 
+              alt="Luxurious Catering Setup with Elegant Chandeliers and Premium Service" 
               className="rounded-xl shadow-2xl relative z-10 max-w-full md:max-w-md smooth-lift"
               loading="eager"
             />

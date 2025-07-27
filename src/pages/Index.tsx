@@ -31,7 +31,7 @@ const Index = () => {
       <Hero />
       <Services />
       <MenuPDFPreview />
-      <GoogleReviews />
+      {/* <GoogleReviews /> */}
       <Gallery />
       <RecentPosts />
       <About />

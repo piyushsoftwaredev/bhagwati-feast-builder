@@ -169,10 +169,41 @@
     @apply max-w-7xl mx-auto px-4 md:px-6;
   }
 
-  /* Performance-optimized animations */
+  /* Enhanced animations and transitions */
   .smooth-lift {
-    @apply transition-all duration-200 ease-out hover:transform hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-all duration-500 ease-out;
     will-change: transform;
+  }
+
+  .smooth-lift:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Gallery enhancements */
+  .gallery-overlay {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.6), hsl(var(--accent) / 0.4));
+    backdrop-filter: blur(8px);
+  }
+
+  /* Responsive utilities */
+  @media (max-width: 640px) {
+    .content-container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    .section-heading {
+      font-size: 2rem;
+    }
+  }
+
+  /* Smooth scrolling for mobile */
+  @media (max-width: 768px) {
+    html {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
   }
 
   .gradient-text {
