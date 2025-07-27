@@ -2,6 +2,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Utensils, Users, UtensilsCrossed, Calendar, Gift, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LazyImage } from "@/components/LazyImage";
 
 const services = [
   {
@@ -58,7 +59,7 @@ const Services = () => {
           {services.map((service, index) => (
             <Card key={index} className="overflow-hidden transition-all duration-500 hover:shadow-2xl border-none rounded-xl group">
               <div className="h-52 overflow-hidden relative">
-                <img 
+                <LazyImage 
                   src={service.image} 
                   alt={service.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"

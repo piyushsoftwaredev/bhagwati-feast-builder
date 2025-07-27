@@ -12,7 +12,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { demoData, type Page } from '@/lib/supabase';
+// Removed database dependencies - using static demo data
+interface Page {
+  id: string;
+  title: string;
+  content: string;
+  slug: string;
+  published: boolean;
+  updated_at?: string;
+}
+
+const demoData = {
+  pages: [
+    { id: '1', title: 'Home', content: 'Welcome to our site', slug: 'home', published: true },
+    { id: '2', title: 'About', content: 'About us', slug: 'about', published: true }
+  ] as Page[]
+};
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }),
@@ -88,7 +103,6 @@ const PageEditor = () => {
           content: values.content,
           slug: values.slug,
           published: values.published,
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         setPages([newPage, ...pages]);

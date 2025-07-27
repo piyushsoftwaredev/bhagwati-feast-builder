@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { LazyImage } from "@/components/LazyImage";
 
 const Hero = () => {
   return (
@@ -34,11 +35,10 @@ const Hero = () => {
         </div>
         <div className="md:w-1/2 flex justify-center md:justify-end relative">
           <div className="relative">
-            <img 
+            <LazyImage 
               src="/lovable-uploads/c2f8f321-f583-4ec1-abd3-f61a789ec22a.png" 
               alt="Luxurious Catering Setup with Elegant Chandeliers and Premium Service" 
               className="rounded-xl shadow-2xl relative z-10 max-w-full md:max-w-md smooth-lift"
-              loading="eager"
             />
             <div className="absolute -bottom-4 -right-4 w-full h-full border-2 border-secondary/30 rounded-xl z-0"></div>
             <div className="absolute -top-4 -left-4 w-24 h-24 bg-accent/20 rounded-full z-0"></div>
@@ -49,7 +49,7 @@ const Hero = () => {
       <div className="absolute bottom-8 left-0 right-0 flex justify-center">
         <a 
           href="#services" 
-          className="animate-bounce p-3 bg-card/80 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl transition-shadow duration-200"
+          className="animate-bounce p-3 bg-card/80 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-200"
         >
           <ChevronDown className="text-primary" size={20} />
         </a>

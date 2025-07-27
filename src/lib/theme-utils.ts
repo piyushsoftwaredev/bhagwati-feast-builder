@@ -1,7 +1,15 @@
+// Removed database dependencies - using static theme configuration
 
-import { ThemeSettings } from './supabase';
+interface ThemeSettings {
+  primary_color: string;
+  secondary_color: string;
+  font_family: string;
+  header_style: string;
+  footer_style: string;
+  custom_css: string;
+}
 
-// Helper function to create a ThemeSettingsConfig object from site_config or theme_settings data
+// Helper function to create a ThemeSettingsConfig object from localStorage or default values
 export function parseThemeSettings(data: any): ThemeSettings {
   // If it's already in the correct format, return it
   if (

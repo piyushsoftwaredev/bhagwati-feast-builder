@@ -12,7 +12,7 @@ import MenuManager from '@/components/admin/MenuManager';
 import SiteConfig from '@/components/admin/SiteConfig';
 import HomepageNavManager from '@/components/admin/HomepageNavManager';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { DatabaseType } from '@/lib/database-provider';
+// Removed database dependencies - using static configuration
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 

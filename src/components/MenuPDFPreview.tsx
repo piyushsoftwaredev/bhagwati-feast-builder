@@ -1,64 +1,81 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Eye } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Download, Eye, Phone, Mail, MapPin, Utensils, Coffee, Cake, UtensilsCrossed, Pizza, Soup } from "lucide-react";
+import { LazyImage } from "@/components/LazyImage";
 import { envConfig } from "@/lib/env-config";
+
+// Menu icons mapping
+const menuIcons = {
+  "Starter Menu": Utensils,
+  "Main Course": UtensilsCrossed, 
+  "Beverages": Coffee,
+  "Desserts": Cake,
+  "Snacks": Pizza,
+  "Soups": Soup,
+  "default": Utensils
+};
 
 interface MenuPDF {
   id: string;
   title: string;
   description: string;
   pdfUrl: string;
-  previewImage: string;
-  category: 'wedding' | 'corporate' | 'premium' | 'festival';
+  category: string;
   featured: boolean;
 }
 
 // Static menu PDFs configuration - easily editable
 const menuPDFs: MenuPDF[] = [
   {
-    id: 'wedding-menu',
-    title: 'Wedding Celebration Menu',
-    description: 'Complete wedding feast menu with traditional delicacies',
-    pdfUrl: '/menus/wedding-menu.pdf',
-    previewImage: '/lovable-uploads/5d5c7034-12e6-444d-bee5-9e030e2d821b.png',
-    category: 'wedding',
+    id: "1",
+    title: "Starter Menu",
+    description: "Delicious appetizers and starters to begin your meal",
+    pdfUrl: "/menus/starters.pdf",
+    category: "Appetizers",
     featured: true
   },
   {
-    id: 'corporate-menu',
-    title: 'Corporate Event Menu',
-    description: 'Professional catering menu for business events',
-    pdfUrl: '/menus/corporate-menu.pdf',
-    previewImage: '/lovable-uploads/29d05495-6e8e-408c-bec9-3ee275a1cb56.png',
-    category: 'corporate',
+    id: "2", 
+    title: "Main Course",
+    description: "Traditional vegetarian main dishes with authentic flavors",
+    pdfUrl: "/menus/main-course.pdf",
+    category: "Main Dishes",
     featured: true
   },
   {
-    id: 'premium-menu',
-    title: 'Premium Collection',
-    description: 'Luxury dining experience with exotic vegetarian cuisine',
-    pdfUrl: '/menus/premium-menu.pdf',
-    previewImage: '/lovable-uploads/855a3d91-f135-4067-9759-efbd99d6ac2b.png',
-    category: 'premium',
+    id: "3",
+    title: "Beverages",
+    description: "Refreshing drinks and traditional beverages",
+    pdfUrl: "/menus/beverages.pdf", 
+    category: "Drinks",
+    featured: false
+  },
+  {
+    id: "4",
+    title: "Desserts",
+    description: "Sweet treats and traditional desserts",
+    pdfUrl: "/menus/desserts.pdf",
+    category: "Sweets",
     featured: true
   },
   {
-    id: 'festival-menu',
-    title: 'Festival Special Menu',
-    description: 'Traditional festival catering with authentic recipes',
-    pdfUrl: '/menus/festival-menu.pdf',
-    previewImage: '/lovable-uploads/c83694ad-699f-427b-838a-2053287781c1.png',
-    category: 'festival',
+    id: "5",
+    title: "Snacks",
+    description: "Light bites and evening snacks",
+    pdfUrl: "/menus/snacks.pdf",
+    category: "Light Food",
+    featured: false
+  },
+  {
+    id: "6",
+    title: "Soups",
+    description: "Warm and comforting soup varieties",
+    pdfUrl: "/menus/soups.pdf",
+    category: "Soups",
     featured: false
   }
 ];
-
-const categoryNames = {
-  wedding: 'Wedding',
-  corporate: 'Corporate', 
-  premium: 'Premium',
-  festival: 'Festival'
-};
 
 const MenuPDFPreview = () => {
   const handleDownload = (pdfUrl: string, title: string) => {
@@ -76,122 +93,127 @@ const MenuPDFPreview = () => {
     window.open(pdfUrl, '_blank');
   };
 
+  const featuredMenus = menuPDFs.filter(menu => menu.featured);
+  const otherMenus = menuPDFs.filter(menu => !menu.featured);
+
   return (
     <section id="menu" className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
       <div className="content-container">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <img 
-              src="/lovable-uploads/fcc83566-eb0f-46e6-9401-1b4837300c76.png" 
-              alt={envConfig.business.name}
-              className="h-12 w-auto"
-            />
-            <h2 className="section-heading">Our Premium Menu Collection</h2>
-          </div>
+          <h2 className="section-heading">Our Premium Menu Collection</h2>
           <p className="text-muted-foreground max-w-3xl mx-auto text-lg">
             Download our beautifully crafted menu PDFs for different occasions. 
             Each menu is carefully curated with authentic vegetarian recipes and premium ingredients.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {menuPDFs.filter(menu => menu.featured).map((menu) => (
-            <Card key={menu.id} className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
-              <div className="relative h-48 overflow-hidden">
-                <img 
-                  src={menu.previewImage}
-                  alt={menu.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute top-3 right-3">
-                  <span className="px-2 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-full">
-                    {categoryNames[menu.category]}
-                  </span>
-                </div>
-              </div>
-              
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-primary group-hover:text-secondary transition-colors">
-                  {menu.title}
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                  {menu.description}
-                </p>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handlePreview(menu.pdfUrl)}
-                    className="flex-1 border-primary/20 hover:bg-primary/5"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => handleDownload(menu.pdfUrl, menu.title)}
-                    className="flex-1 bg-primary hover:bg-primary/90"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Additional menus */}
-        <div className="text-center">
-          <h3 className="text-xl font-semibold text-primary mb-6">More Menu Options</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-            {menuPDFs.filter(menu => !menu.featured).map((menu) => (
-              <Card key={menu.id} className="p-4 hover:shadow-md transition-shadow bg-white/60 backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-left">
-                    <h4 className="font-medium text-primary">{menu.title}</h4>
-                    <p className="text-sm text-muted-foreground">{menu.description}</p>
+        {/* Featured Menus */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {featuredMenus.map((menu) => {
+            const IconComponent = menuIcons[menu.title as keyof typeof menuIcons] || menuIcons.default;
+            return (
+              <Card key={menu.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <IconComponent className="h-8 w-8 text-primary" />
+                    </div>
+                    <Badge variant="secondary" className="bg-secondary/20 text-secondary">
+                      Featured
+                    </Badge>
                   </div>
-                  <div className="flex gap-1 ml-4">
+                  <CardTitle className="text-xl text-primary">{menu.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    {menu.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex gap-2">
                     <Button 
-                      size="sm" 
-                      variant="ghost"
+                      variant="outline" 
+                      size="sm"
                       onClick={() => handlePreview(menu.pdfUrl)}
-                      className="p-2"
+                      className="flex-1"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="mr-2 h-4 w-4" />
+                      Preview
                     </Button>
                     <Button 
                       size="sm"
-                      variant="ghost"
                       onClick={() => handleDownload(menu.pdfUrl, menu.title)}
-                      className="p-2"
+                      className="flex-1"
                     >
-                      <Download className="h-4 w-4" />
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
                     </Button>
                   </div>
-                </div>
+                </CardContent>
               </Card>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        <div className="mt-12 text-center bg-white/80 backdrop-blur-sm rounded-lg p-8 border border-primary/10">
+        {/* Other Menus */}
+        <div className="text-center mb-8">
+          <h3 className="text-xl font-semibold text-primary mb-6">More Menu Options</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {otherMenus.map((menu) => {
+            const IconComponent = menuIcons[menu.title as keyof typeof menuIcons] || menuIcons.default;
+            return (
+              <Card key={menu.id} className="hover:shadow-md transition-all duration-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-muted rounded-md">
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardTitle className="text-lg">{menu.title}</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    {menu.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handlePreview(menu.pdfUrl)}
+                      className="flex-1"
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      View
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownload(menu.pdfUrl, menu.title)}
+                      className="flex-1"
+                    >
+                      <Download className="mr-1 h-3 w-3" />
+                      Get
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Custom Menu Requests */}
+        <div className="mt-12 text-center bg-card/80 rounded-lg p-8 border border-primary/10">
           <h3 className="text-lg font-semibold text-primary mb-2">Custom Menu Requests</h3>
           <p className="text-muted-foreground mb-4">
             Need a personalized menu for your special event? Contact us for custom menu creation.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
-              Call: {envConfig.business.phone1}
+              <Phone className="mr-2 h-4 w-4" />
+              {envConfig.business.phone1}
             </Button>
             <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
-              Email: {envConfig.business.email1}
+              <Mail className="mr-2 h-4 w-4" />
+              {envConfig.business.email1}
             </Button>
           </div>
         </div>

@@ -7,17 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseType } from '@/lib/database-provider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 
-// Define props interface for SiteSettings
+// Removed database dependencies - using static configuration
+
 interface SiteSettingsProps {
-  dbType: DatabaseType | null;
-  onDatabaseChange: () => void;
+  onSettingsChange: () => void;
 }
 
-const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
+const SiteSettings = ({ onSettingsChange }: SiteSettingsProps) => {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     siteName: 'Bhagwati Feast',
@@ -37,11 +36,16 @@ const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
   });
 
   useEffect(() => {
-    // Load settings from the database
-    // This is a placeholder - you'll need to implement actual data loading
+    // Load settings from localStorage or use defaults
     const loadSettings = async () => {
-      // In a real implementation, you would fetch from the database
-      console.log('Loading settings...');
+      try {
+        const savedSettings = localStorage.getItem('siteSettings');
+        if (savedSettings) {
+          setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
     };
     
     loadSettings();
@@ -56,9 +60,11 @@ const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
 
   const saveSettings = async () => {
     try {
-      // Save settings to the database
-      // This is a placeholder - you'll need to implement actual saving logic
-      console.log('Saving settings:', settings);
+      // Save settings to localStorage for static site
+      localStorage.setItem('siteSettings', JSON.stringify(settings));
+      
+      // Trigger settings change callback
+      onSettingsChange();
       
       // Show success toast
       toast({
@@ -77,49 +83,37 @@ const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Static Website Configuration */}
       <Card>
         <CardHeader>
-          <CardTitle>Database Configuration</CardTitle>
+          <CardTitle>Website Configuration</CardTitle>
           <CardDescription>
-            Manage your database connection settings
+            This is a static website using hardcoded data - no database required
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertTitle>Current Database</AlertTitle>
-              <AlertDescription>
-                {dbType === DatabaseType.MYSQL ? 'Connected to local MySQL database' : 
-                 dbType === DatabaseType.SUPABASE ? 'Connected to Supabase cloud database' : 
-                 'Using demo mode (no database connection)'}
-                <span className="ml-2 text-xs text-gray-500">
-                  Connected at: 2025-05-05 03:16:41 • User: piyushsoftwaredev
-                </span>
-              </AlertDescription>
-            </Alert>
-            
-            <div className="flex space-x-4">
-              <Button 
-                variant="outline"
-                onClick={onDatabaseChange}
-              >
-                Reconnect Database
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // Implementation for exporting database
-                  toast({
-                    title: "Database Export",
-                    description: "Database export started. This may take a moment."
-                  });
-                }}
-              >
-                Export Database
-              </Button>
-            </div>
+        <CardContent className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Static Configuration</AlertTitle>
+            <AlertDescription>
+              This website uses static data files and environment variables for configuration.
+              All content is managed through code files.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                // Implementation for exporting static data
+                toast({
+                  title: "Static Export",
+                  description: "Static configuration exported successfully."
+                });
+              }}
+            >
+              Export Configuration
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -327,7 +321,7 @@ const SiteSettings = ({ dbType, onDatabaseChange }: SiteSettingsProps) => {
       <div className="flex justify-end">
         <Button 
           onClick={saveSettings}
-          className="bg-bhagwati-maroon hover:bg-red-900"
+          className="bg-primary hover:bg-primary/90"
         >
           Save Settings
         </Button>

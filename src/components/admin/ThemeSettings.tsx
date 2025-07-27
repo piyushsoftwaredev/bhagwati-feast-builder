@@ -3,8 +3,23 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getThemeSettings, saveThemeSettings } from '@/lib/supabase';
-import type { ThemeSettings as ThemeSettingsType } from '@/lib/supabase';
+// Removed database dependencies - using static theme configuration
+interface ThemeSettings {
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+}
+
+const getThemeSettings = (): ThemeSettings => ({
+  primaryColor: '#8b5cf6',
+  secondaryColor: '#f59e0b', 
+  fontFamily: 'Inter'
+});
+
+const saveThemeSettings = (settings: ThemeSettings) => {
+  // In a static site, theme settings would be saved to localStorage or managed via CSS variables
+  localStorage.setItem('themeSettings', JSON.stringify(settings));
+};
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {

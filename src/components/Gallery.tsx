@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { LazyImage } from "@/components/LazyImage";
 
 const images = [
   "/lovable-uploads/f3dd8b9e-0d8d-4025-b5c1-929eec597a75.png",
@@ -56,12 +57,12 @@ const Gallery = () => {
               className="aspect-square overflow-hidden rounded-xl cursor-pointer hover:shadow-2xl transition-all duration-500 group relative ring-1 ring-border/50 hover:ring-primary/20"
               onClick={() => openImage(image, index)}
             >
-              <img
+              <LazyImage
                 src={image}
                 alt={`Gallery image ${index + 1}`}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all duration-500 flex items-center justify-center backdrop-blur-[2px]">
+              <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all duration-500 flex items-center justify-center">
                 <span className="text-white opacity-0 group-hover:opacity-100 transition-all duration-500 text-lg font-semibold transform scale-75 group-hover:scale-100">View Gallery</span>
               </div>
             </div>
